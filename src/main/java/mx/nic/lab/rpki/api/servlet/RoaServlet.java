@@ -8,6 +8,7 @@ import mx.nic.lab.rpki.api.result.ApiResult;
 import mx.nic.lab.rpki.api.util.Util;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.exception.http.HttpException;
+import mx.nic.lab.rpki.db.pojo.Roa;
 import mx.nic.lab.rpki.db.service.DataAccessService;
 import mx.nic.lab.rpki.db.spi.RoaDAO;
 
@@ -38,7 +39,11 @@ public class RoaServlet extends DataAccessServlet<RoaDAO> {
 	protected ApiResult doApiDaGet(HttpServletRequest request, RoaDAO dao)
 			throws HttpException, ApiDataAccessException {
 		Long id = Long.parseLong(Util.getRequestParams(request, 1)[0]);
-		return new RoaResult(dao.getById(id));
+		Roa roa = dao.getById(id);
+		if (roa == null) {
+			return null;
+		}
+		return new RoaResult(roa);
 	}
 
 }
