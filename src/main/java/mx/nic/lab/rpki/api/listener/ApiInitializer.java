@@ -2,7 +2,8 @@ package mx.nic.lab.rpki.api.listener;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Map.Entry;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Properties;
 
 import javax.servlet.ServletContext;
@@ -10,6 +11,7 @@ import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.annotation.WebListener;
 
+import mx.nic.lab.rpki.api.config.ApiConfiguration;
 import mx.nic.lab.rpki.db.exception.InitializationException;
 import mx.nic.lab.rpki.db.service.DataAccessService;
 
@@ -17,39 +19,65 @@ import mx.nic.lab.rpki.db.service.DataAccessService;
 public class ApiInitializer implements ServletContextListener {
 
 	/**
-	 * File from which we will load the configuration of the data access
-	 * implementation.
+	 * File name from where the API main properties will be loaded
+	 */
+	private static final String CONFIGURATION_FILE = "configuration";
+
+	/**
+	 * File name from where the configuration of the data access implementation will
+	 * be loaded.
 	 */
 	private static final String DATA_ACCESS_FILE = "data-access";
+
+	private static final String USER_CONFIGURATION_PARAM_NAME = "configurationUserPath";
+	private static final String USER_DATA_ACCESS_PARAM_NAME = "dataAccessUserPath";
 
 	private static ServletContext servletContext;
 
 	@Override
 	public void contextInitialized(ServletContextEvent event) {
 		servletContext = event.getServletContext();
-		Properties serverConfig = new Properties();
+		// Load app configuration
 		try {
-			Properties dataAccessConfig = loadConfig(DATA_ACCESS_FILE);
-			for (Entry<Object, Object> entry : dataAccessConfig.entrySet()) {
-				serverConfig.put(entry.getKey(), entry.getValue());
-			}
-			DataAccessService.initialize(serverConfig);
+			Properties appConfig = loadConfig(CONFIGURATION_FILE, USER_CONFIGURATION_PARAM_NAME);
+			ApiConfiguration.initialize(appConfig);
+		} catch (IOException | InitializationException e) {
+			throw new IllegalArgumentException(e);
+		}
+		// Load DA configuration
+		try {
+			Properties dataAccessConfig = loadConfig(DATA_ACCESS_FILE, USER_DATA_ACCESS_PARAM_NAME);
+			DataAccessService.initialize(dataAccessConfig);
 		} catch (IOException | InitializationException e) {
 			throw new IllegalArgumentException(e);
 		}
 	}
 
-	private Properties loadConfig(String baseFileName) throws IOException {
-		// FIXME First, load the default values (from META-INF).
-		Properties p = new Properties();
-		String path = "WEB-INF/" + baseFileName + ".properties";
-		try (InputStream inStream = servletContext.getResourceAsStream(path);) {
-			if (inStream != null) {
-				p.load(inStream);
+	private Properties loadConfig(String baseFileName, String userPathParamName) throws IOException {
+		// First, load the default values (from META-INF)
+		String fileName = "META-INF/" + baseFileName + ".properties";
+		Properties properties = new Properties();
+		try (InputStream configStream = ApiInitializer.class.getClassLoader().getResourceAsStream(fileName)) {
+			if (configStream != null) {
+				properties.load(configStream);
 			}
 		}
 
-		return p;
+		// Then, override with whatever the user set up.
+		String userFilePath = servletContext.getInitParameter(userPathParamName);
+		if (userFilePath == null) {
+			userFilePath = "WEB-INF/" + baseFileName + ".properties";
+		} else {
+			Path path = Paths.get(userFilePath, baseFileName + ".properties");
+			userFilePath = path.toString();
+		}
+		try (InputStream inStream = servletContext.getResourceAsStream(userFilePath);) {
+			if (inStream != null) {
+				properties.load(inStream);
+			}
+		}
+
+		return properties;
 	}
 
 	@Override
