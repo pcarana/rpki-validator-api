@@ -23,7 +23,7 @@ public class NotFoundException extends HttpException {
 
 	private static final long serialVersionUID = 1L;
 	private static final int CODE = HttpServletResponse.SC_NOT_FOUND;
-	private static final String DEFAULT_MSG = "Not Found";
+	private static final String DEFAULT_MSG = "#{exception.notFound}";
 
 	public NotFoundException() {
 		super(CODE, DEFAULT_MSG);
