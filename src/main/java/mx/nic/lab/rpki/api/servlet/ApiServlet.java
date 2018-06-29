@@ -33,14 +33,26 @@ public abstract class ApiServlet extends HttpServlet {
 
 	private static final Logger logger = Logger.getLogger(ApiServlet.class.getName());
 
+	/**
+	 * Get the complete JSON string, replacing all the labels "#{label}" with its
+	 * corresponding locale value. If there's no bundle available or no property
+	 * defined, an empty String is used to replace the corresponding label.
+	 * 
+	 * @param locale
+	 * @param jsonString
+	 * @return JSON string with labels replaced
+	 */
 	private String getLocaleJson(Locale locale, String jsonString) {
+		// Match by groups, the 2nd group determines the key to lookup at the bundles
 		String labelPattern = "(\\#\\{)([\\w\\.\\-]+)(\\})";
 		Matcher m = Pattern.compile(labelPattern).matcher(jsonString);
 		ResourceBundle bundle = null;
 		try {
 			bundle = ResourceBundle.getBundle("META-INF/labels/errors", locale);
+			String replacement;
 			while (m.find()) {
-				jsonString = jsonString.replace(m.group(), bundle.getString(m.group(2)));
+				replacement = bundle.containsKey(m.group(2)) ? bundle.getString(m.group(2)) : "";
+				jsonString = jsonString.replace(m.group(), replacement);
 			}
 		} catch (MissingResourceException e) {
 			// This is an internal error, replace the labels with empty strings and log
