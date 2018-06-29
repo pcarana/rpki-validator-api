@@ -82,7 +82,8 @@ public abstract class ApiServlet extends HttpServlet {
 		} catch (ApiDataAccessException e) {
 			// Some error sent by the implementation, handle properly
 			responseCode = HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
-			result = new ExceptionResult(new HttpException(responseCode, e.getMessage()));
+			result = new ExceptionResult(new HttpException(responseCode, "#{exception.internalError}"));
+			logger.log(Level.SEVERE, e.getMessage(), e);
 		}
 
 		if (result == null) {
