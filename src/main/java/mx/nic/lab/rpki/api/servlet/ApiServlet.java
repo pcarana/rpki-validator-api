@@ -55,7 +55,12 @@ public abstract class ApiServlet extends HttpServlet {
 				jsonString = jsonString.replace(m.group(), replacement);
 			}
 		} catch (MissingResourceException e) {
-			// This is an internal error, replace the labels with empty strings and log
+			// Fallback: if no bundle was found, try to use the default
+			if (!locale.equals(Locale.getDefault())) {
+				return getLocaleJson(Locale.getDefault(), jsonString);
+			}
+			// Not even the default was found (that's bad), so this is an internal error,
+			// replace the labels with empty strings and log
 			logger.log(Level.SEVERE, "Error loading bundle, still responding to the request", e);
 			while (m.find()) {
 				jsonString = jsonString.replace(m.group(), "");
