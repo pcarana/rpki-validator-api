@@ -6,8 +6,8 @@ import java.sql.SQLException;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.pojo.Roa;
 import mx.nic.lab.rpki.db.spi.RoaDAO;
-import mx.nic.lab.rpki.sqlite.impl.database.DatabaseSession;
-import mx.nic.lab.rpki.sqlite.impl.model.RoaModel;
+import mx.nic.lab.rpki.sqlite.database.DatabaseSession;
+import mx.nic.lab.rpki.sqlite.model.RoaModel;
 
 /**
  * Implementation to retrieve ROAs data

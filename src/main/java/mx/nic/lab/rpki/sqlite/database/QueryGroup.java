@@ -1,4 +1,4 @@
-package mx.nic.lab.rpki.sqlite.impl.database;
+package mx.nic.lab.rpki.sqlite.database;
 
 import java.io.BufferedReader;
 import java.io.IOException;

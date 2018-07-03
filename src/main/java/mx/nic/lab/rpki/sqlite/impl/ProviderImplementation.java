@@ -6,8 +6,8 @@ import mx.nic.lab.rpki.db.exception.InitializationException;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.spi.DataAccessImplementation;
 import mx.nic.lab.rpki.db.spi.RoaDAO;
-import mx.nic.lab.rpki.sqlite.impl.database.DatabaseSession;
-import mx.nic.lab.rpki.sqlite.impl.model.QueryLoader;
+import mx.nic.lab.rpki.sqlite.database.DatabaseSession;
+import mx.nic.lab.rpki.sqlite.model.QueryLoader;
 
 /**
  * Implementation used for {@link DataAccessImplementation}

@@ -1,4 +1,4 @@
-package mx.nic.lab.rpki.sqlite.impl.model;
+package mx.nic.lab.rpki.sqlite.model;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -9,7 +9,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import mx.nic.lab.rpki.db.pojo.Roa;
-import mx.nic.lab.rpki.sqlite.impl.database.QueryGroup;
+import mx.nic.lab.rpki.sqlite.database.QueryGroup;
 
 /**
  * Model to retrieve ROA data from the database

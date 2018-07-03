@@ -1,4 +1,4 @@
-package mx.nic.lab.rpki.sqlite.impl.model;
+package mx.nic.lab.rpki.sqlite.model;
 
 import java.util.Properties;
 
