@@ -22,11 +22,11 @@ public abstract class ApiListResult extends ApiResult {
 	}
 
 	@Override
-	public String toJson() {
+	public String toJsonString() {
 		if (apiObjects != null) {
 			StringBuilder sb = new StringBuilder();
 			sb.append("[");
-			apiObjects.forEach(obj -> sb.append(obj.toJson()).append(","));
+			apiObjects.forEach(obj -> sb.append(obj.toJsonObject().toString()).append(","));
 			sb.deleteCharAt(sb.length() - 1);
 			sb.append("]");
 			return sb.toString();

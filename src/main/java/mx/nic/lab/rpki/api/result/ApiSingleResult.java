@@ -20,9 +20,9 @@ public abstract class ApiSingleResult extends ApiResult {
 	}
 
 	@Override
-	public String toJson() {
+	public String toJsonString() {
 		if (getApiObject() != null) {
-			return getApiObject().toJson();
+			return getApiObject().toJsonObject().toString();
 		}
 		return "{}";
 	}

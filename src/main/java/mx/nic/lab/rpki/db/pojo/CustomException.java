@@ -1,6 +1,7 @@
 package mx.nic.lab.rpki.db.pojo;
 
 import javax.json.Json;
+import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
 /**
@@ -39,7 +40,7 @@ public class CustomException extends ApiObject {
 	}
 
 	@Override
-	public String toJson() {
+	public JsonObject toJsonObject() {
 		JsonObjectBuilder object = Json.createObjectBuilder();
 		if (errorCode > 0) {
 			object.add("errorCode", errorCode);
@@ -51,7 +52,7 @@ public class CustomException extends ApiObject {
 			if (errorCode < 500)
 				object.add("description", errorDescription);
 		}
-		return object.build().toString();
+		return object.build();
 	}
 
 }

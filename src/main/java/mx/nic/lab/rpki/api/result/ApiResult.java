@@ -11,6 +11,6 @@ public abstract class ApiResult {
 	 * 
 	 * @return JSON as String
 	 */
-	public abstract String toJson();
+	public abstract String toJsonString();
 
 }

@@ -98,7 +98,7 @@ public abstract class ApiServlet extends HttpServlet {
 		resp.setContentType("application/json");
 		resp.setHeader("Access-Control-Allow-Origin", "*");
 
-		String body = getLocaleJson(req.getLocale(), result.toJson());
+		String body = getLocaleJson(req.getLocale(), result.toJsonString());
 		resp.getWriter().print(body);
 	}
 
