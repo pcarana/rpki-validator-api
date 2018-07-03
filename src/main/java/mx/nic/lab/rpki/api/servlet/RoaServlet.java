@@ -31,7 +31,6 @@ public class RoaServlet extends DataAccessServlet<RoaDAO> {
 
 	@Override
 	protected String getServedObjectName() {
-		// TODO Auto-generated method stub
 		return "roa";
 	}
 
