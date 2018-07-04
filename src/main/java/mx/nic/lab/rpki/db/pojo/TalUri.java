@@ -23,7 +23,7 @@ public class TalUri extends ApiObject {
 	/**
 	 * URI value configured
 	 */
-	private String uriValue;
+	private String value;
 
 	/**
 	 * Loaded CER from the URI configured, MAY be null if the URI wasn't loaded
@@ -41,7 +41,7 @@ public class TalUri extends ApiObject {
 		int result = super.hashCode();
 		result = prime * result + ((id == null) ? 0 : id.hashCode());
 		result = prime * result + ((talId == null) ? 0 : talId.hashCode());
-		result = prime * result + ((uriValue == null) ? 0 : uriValue.hashCode());
+		result = prime * result + ((value == null) ? 0 : value.hashCode());
 		result = prime * result + ((loadedCer == null) ? 0 : loadedCer.hashCode());
 		return result;
 	}
@@ -65,10 +65,10 @@ public class TalUri extends ApiObject {
 				return false;
 		} else if (!talId.equals(other.talId))
 			return false;
-		if (uriValue == null) {
-			if (other.uriValue != null)
+		if (value == null) {
+			if (other.value != null)
 				return false;
-		} else if (!uriValue.equals(other.uriValue))
+		} else if (!value.equals(other.value))
 			return false;
 		if (loadedCer == null) {
 			if (other.loadedCer != null)
@@ -83,7 +83,7 @@ public class TalUri extends ApiObject {
 		JsonObjectBuilder object = Json.createObjectBuilder();
 		object.add("id", id);
 		object.add("talId", talId);
-		object.add("uriValue", uriValue);
+		object.add("value", value);
 		object.add("loadedCer", loadedCer);
 		return object.build();
 	}
@@ -104,12 +104,12 @@ public class TalUri extends ApiObject {
 		this.talId = talId;
 	}
 
-	public String getUriValue() {
-		return uriValue;
+	public String getValue() {
+		return value;
 	}
 
-	public void setUriValue(String uriValue) {
-		this.uriValue = uriValue;
+	public void setValue(String value) {
+		this.value = value;
 	}
 
 	public String getLoadedCer() {
