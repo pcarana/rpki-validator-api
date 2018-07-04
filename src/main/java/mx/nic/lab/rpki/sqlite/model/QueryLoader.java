@@ -23,5 +23,6 @@ public class QueryLoader {
 	private static void loadModelsQueries(String schema) {
 		RoaModel.loadQueryGroup(schema);
 		TalFileModel.loadQueryGroup(schema);
+		TalUriModel.loadQueryGroup(schema);
 	}
 }

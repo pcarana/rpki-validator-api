@@ -1,5 +1,7 @@
 package mx.nic.lab.rpki.db.pojo;
 
+import java.security.cert.X509Certificate;
+
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
@@ -28,7 +30,12 @@ public class TalUri extends ApiObject {
 	/**
 	 * Loaded CER from the URI configured, MAY be null if the URI wasn't loaded
 	 */
-	private String loadedCer;
+	private X509Certificate loadedCer;
+
+	/**
+	 * Flag to know if the URI was loaded
+	 */
+	private Boolean loaded;
 
 	@Override
 	public String toString() {
@@ -43,6 +50,7 @@ public class TalUri extends ApiObject {
 		result = prime * result + ((talId == null) ? 0 : talId.hashCode());
 		result = prime * result + ((value == null) ? 0 : value.hashCode());
 		result = prime * result + ((loadedCer == null) ? 0 : loadedCer.hashCode());
+		result = prime * result + ((loaded == null) ? 0 : loaded.hashCode());
 		return result;
 	}
 
@@ -75,6 +83,11 @@ public class TalUri extends ApiObject {
 				return false;
 		} else if (!loadedCer.equals(other.loadedCer))
 			return false;
+		if (loaded == null) {
+			if (other.loaded != null)
+				return false;
+		} else if (!loaded.equals(other.loaded))
+			return false;
 		return true;
 	}
 
@@ -84,7 +97,9 @@ public class TalUri extends ApiObject {
 		object.add("id", id);
 		object.add("talId", talId);
 		object.add("value", value);
-		object.add("loadedCer", loadedCer);
+		// FIXME Return as valid JSON maybe?
+		object.add("loadedCer", loadedCer.toString());
+		object.add("loaded", loaded.toString());
 		return object.build();
 	}
 
@@ -112,11 +127,19 @@ public class TalUri extends ApiObject {
 		this.value = value;
 	}
 
-	public String getLoadedCer() {
+	public X509Certificate getLoadedCer() {
 		return loadedCer;
 	}
 
-	public void setLoadedCer(String loadedCer) {
+	public void setLoadedCer(X509Certificate loadedCer) {
 		this.loadedCer = loadedCer;
+	}
+
+	public Boolean getLoaded() {
+		return loaded;
+	}
+
+	public void setLoaded(Boolean loaded) {
+		this.loaded = loaded;
 	}
 }
