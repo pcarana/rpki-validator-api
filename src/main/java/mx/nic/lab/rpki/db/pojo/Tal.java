@@ -35,11 +35,6 @@ public class Tal extends ApiObject {
 	private String status;
 
 	/**
-	 * Loaded URI from the list of available URIs
-	 */
-	private TalUri loadedUri;
-
-	/**
 	 * Common name of the loaded certificate
 	 */
 	private String name;
@@ -73,7 +68,6 @@ public class Tal extends ApiObject {
 		result = prime * result + ((lastSync == null) ? 0 : lastSync.hashCode());
 		result = prime * result + ((publicKey == null) ? 0 : publicKey.hashCode());
 		result = prime * result + ((status == null) ? 0 : status.hashCode());
-		result = prime * result + ((loadedUri == null) ? 0 : loadedUri.hashCode());
 		result = prime * result + ((name == null) ? 0 : name.hashCode());
 		result = prime * result + ((talUris == null) ? 0 : talUris.hashCode());
 		result = prime * result + ((talFiles == null) ? 0 : talFiles.hashCode());
@@ -109,11 +103,6 @@ public class Tal extends ApiObject {
 				return false;
 		} else if (!status.equals(other.status))
 			return false;
-		if (loadedUri == null) {
-			if (other.loadedUri != null)
-				return false;
-		} else if (!loadedUri.equals(other.loadedUri))
-			return false;
 		if (name == null) {
 			if (other.name != null)
 				return false;
@@ -139,7 +128,6 @@ public class Tal extends ApiObject {
 		object.add("lastSync", lastSync);
 		object.add("publicKey", publicKey);
 		object.add("status", status);
-		object.add("loadedUri", loadedUri.toJsonObject());
 		object.add("name", name);
 		JsonArrayBuilder arrayBuilder = Json.createArrayBuilder(talUris);
 		object.add("talUris", arrayBuilder);
@@ -178,14 +166,6 @@ public class Tal extends ApiObject {
 
 	public void setStatus(String status) {
 		this.status = status;
-	}
-
-	public TalUri getLoadedUri() {
-		return loadedUri;
-	}
-
-	public void setLoadedUri(TalUri loadedUri) {
-		this.loadedUri = loadedUri;
 	}
 
 	public String getName() {
