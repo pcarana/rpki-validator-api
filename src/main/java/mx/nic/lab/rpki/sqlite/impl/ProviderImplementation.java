@@ -6,6 +6,7 @@ import mx.nic.lab.rpki.db.exception.InitializationException;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.spi.DataAccessImplementation;
 import mx.nic.lab.rpki.db.spi.RoaDAO;
+import mx.nic.lab.rpki.db.spi.TalDAO;
 import mx.nic.lab.rpki.sqlite.database.DatabaseSession;
 import mx.nic.lab.rpki.sqlite.model.QueryLoader;
 
@@ -19,6 +20,11 @@ public class ProviderImplementation implements DataAccessImplementation {
 	public void init(Properties properties) throws InitializationException {
 		DatabaseSession.initConnection(properties);
 		QueryLoader.init(properties);
+	}
+
+	@Override
+	public TalDAO getTalDAO() throws ApiDataAccessException {
+		return new TalDAOImpl();
 	}
 
 	@Override

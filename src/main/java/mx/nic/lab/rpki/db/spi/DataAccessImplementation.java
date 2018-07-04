@@ -28,6 +28,16 @@ public interface DataAccessImplementation {
 	public void init(Properties properties) throws InitializationException;
 
 	/**
+	 * Returns an instance of the implementation class that retrieves TALs data from
+	 * whatever source the implementation is wrapping.
+	 * <p>
+	 * If no TAL data is ment to be returned by the implementation, this function is
+	 * expected to either return <code>null</code> or throw a
+	 * {@link NotImplementedException}.
+	 */
+	public TalDAO getTalDAO() throws ApiDataAccessException;
+
+	/**
 	 * Returns an instance of the implementation class that retrieves ROAs data from
 	 * whatever source the implementation is wrapping.
 	 * <p>

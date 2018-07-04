@@ -10,6 +10,7 @@ import mx.nic.lab.rpki.db.exception.InitializationException;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.spi.DataAccessImplementation;
 import mx.nic.lab.rpki.db.spi.RoaDAO;
+import mx.nic.lab.rpki.db.spi.TalDAO;
 
 /**
  * This is the class that loads the global {@link DataAccessImplementation} the
@@ -94,8 +95,8 @@ public class DataAccessService {
 	 * classpath is a royal mess by definition.
 	 * <p>
 	 * If a user installs some other provider aside from the default one
-	 * (rpki-validator-provider), I don't want the server to crash because this method
-	 * arbitrarily chose the default provider and the user did not supply its
+	 * (rpki-validator-provider), I don't want the server to crash because this
+	 * method arbitrarily chose the default provider and the user did not supply its
 	 * configuration. (Or worse: Grab default or stale configuration and appear as
 	 * if everything is working.) Ideally, the new provider would take precedence
 	 * over whatever is default, but since this project cannot refer
@@ -152,6 +153,10 @@ public class DataAccessService {
 		}
 
 		return implementation;
+	}
+
+	public static TalDAO getTalDAO() throws ApiDataAccessException {
+		return getImplementation().getTalDAO();
 	}
 
 	public static RoaDAO getRoaDAO() throws ApiDataAccessException {
