@@ -16,8 +16,10 @@ import mx.nic.lab.rpki.db.exception.http.NotFoundException;
 public class Util {
 
 	/**
-	 * Return ther request parameters as a String array. If the request's URI is
-	 * /server/ip/192.0.2.0/24, then this returns ["192.0.2.0", "24"].
+	 * Return the additional path info of a request URI as a String array, i.e. If
+	 * the request's URI is "/server/ip/192.0.2.0/24", and the servlet path where
+	 * this request was received is "/server/ip/*", then this returns the array
+	 * ["192.0.2.0", "24"].
 	 * 
 	 * @param request
 	 *            request you want the arguments from.
@@ -28,7 +30,8 @@ public class Util {
 	 * @throws HttpException
 	 *             <code>request</code> is not a valid URI.
 	 */
-	public static String[] getRequestParams(HttpServletRequest request, int maxParamsExpected) throws HttpException {
+	public static String[] getAdditionaPathInfo(HttpServletRequest request, int maxParamsExpected)
+			throws HttpException {
 		try {
 			URLDecoder.decode(request.getRequestURI(), "UTF-8");
 		} catch (UnsupportedEncodingException e) {
