@@ -38,7 +38,7 @@ public class TalDbObject extends Tal implements DatabaseObject {
 		setLastSync(resultSet.getString(LAST_SYNC_COLUMN));
 		setPublicKey(resultSet.getString(PUBLIC_KEY_COLUMN));
 		setStatus(resultSet.getString(STATUS_COLUMN));
-		setName(resultSet.getString(STATUS_COLUMN));
+		setName(resultSet.getString(NAME_COLUMN));
 	}
 
 	@Override
