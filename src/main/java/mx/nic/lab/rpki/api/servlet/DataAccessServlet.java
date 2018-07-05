@@ -5,12 +5,12 @@ import java.net.URLDecoder;
 
 import javax.servlet.http.HttpServletRequest;
 
-import mx.nic.lab.rpki.db.spi.DAO;
 import mx.nic.lab.rpki.api.result.ApiResult;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.exception.http.BadRequestException;
 import mx.nic.lab.rpki.db.exception.http.HttpException;
-import mx.nic.lab.rpki.db.exception.http.NotImplementedException;
+import mx.nic.lab.rpki.db.exception.http.NotFoundException;
+import mx.nic.lab.rpki.db.spi.DAO;
 
 /**
  * A servlet that extracts information from a specific DAO.
@@ -38,7 +38,7 @@ public abstract class DataAccessServlet<T extends DAO> extends ApiServlet {
 	protected ApiResult doApiGet(HttpServletRequest request) throws HttpException, ApiDataAccessException {
 		T dao = initAccessDAO();
 		if (dao == null) {
-			throw new NotImplementedException("This server does not implement " + getServedObjectName() + " requests.");
+			throw new NotFoundException("#{exception.notFound}");
 		}
 
 		try {
