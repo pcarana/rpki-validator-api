@@ -37,7 +37,7 @@ public class RoaServlet extends DataAccessServlet<RoaDAO> {
 	@Override
 	protected ApiResult doApiDaGet(HttpServletRequest request, RoaDAO dao)
 			throws HttpException, ApiDataAccessException {
-		Long id = Long.parseLong(Util.getAdditionaPathInfo(request, 1)[0]);
+		Long id = Long.parseLong(Util.getAdditionaPathInfo(request, 1, false).get(0));
 		Roa roa = dao.getById(id);
 		if (roa == null) {
 			return null;
