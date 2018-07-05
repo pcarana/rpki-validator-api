@@ -19,6 +19,7 @@ import mx.nic.lab.rpki.api.result.ExceptionResult;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.exception.http.HttpException;
 import mx.nic.lab.rpki.db.exception.http.NotFoundException;
+import mx.nic.lab.rpki.db.pojo.CustomException;
 
 /**
  * Base class of all API servlets, implements all the supported request methods
@@ -43,6 +44,9 @@ public abstract class ApiServlet extends HttpServlet {
 	 * @return JSON string with labels replaced
 	 */
 	private String getLocaleJson(Locale locale, String jsonString) {
+		if (jsonString == null) {
+			return jsonString;
+		}
 		// Match by groups, the 2nd group determines the key to lookup at the bundles
 		String labelPattern = "(\\#\\{)([\\w\\.\\-]+)(\\})";
 		Matcher m = Pattern.compile(labelPattern).matcher(jsonString);
@@ -90,6 +94,11 @@ public abstract class ApiServlet extends HttpServlet {
 			NotFoundException nfe = new NotFoundException();
 			responseCode = nfe.getHttpResponseStatusCode();
 			result = new ExceptionResult(nfe);
+		} else if (result instanceof ExceptionResult) {
+			// It was an error handled by the ExceptionServlet
+			ExceptionResult er = (ExceptionResult) result;
+			CustomException ce = (CustomException) er.getApiObject();
+			responseCode = ce.getErrorCode();
 		}
 
 		// Render RESULT
