@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.json.Json;
-import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
@@ -125,14 +124,32 @@ public class Tal extends ApiObject {
 	public JsonObject toJsonObject() {
 		JsonObjectBuilder object = Json.createObjectBuilder();
 		object.add("id", id);
-		object.add("lastSync", lastSync);
-		object.add("publicKey", publicKey);
+		if (lastSync == null) {
+			object.addNull("lastSync");
+		} else {
+			object.add("lastSync", lastSync);
+		}
+		if (publicKey == null) {
+			object.addNull("publicKey");
+		} else {
+			object.add("publicKey", publicKey);
+		}
 		object.add("status", status);
-		object.add("name", name);
-		JsonArrayBuilder arrayBuilder = Json.createArrayBuilder(talUris);
-		object.add("talUris", arrayBuilder);
-		arrayBuilder = Json.createArrayBuilder(talFiles);
-		object.add("talFiles", arrayBuilder);
+		if (name == null) {
+			object.addNull("name");
+		} else {
+			object.add("name", name);
+		}
+		if (talUris == null) {
+			object.addNull("talUris");
+		} else {
+			object.add("talUris", Json.createArrayBuilder(talUris));
+		}
+		if (talFiles == null) {
+			object.addNull("talFiles");
+		} else {
+			object.add("talFiles", Json.createArrayBuilder(talFiles));
+		}
 		return object.build();
 	}
 
