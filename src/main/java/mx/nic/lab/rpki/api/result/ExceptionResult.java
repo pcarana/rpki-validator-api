@@ -8,7 +8,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import mx.nic.lab.rpki.db.exception.http.HttpException;
-import mx.nic.lab.rpki.db.pojo.CustomException;
+import mx.nic.lab.rpki.db.pojo.ApiException;
 
 /**
  * A result from a exception generated in a request, extends from
@@ -32,11 +32,11 @@ public class ExceptionResult extends ApiSingleResult {
 	 */
 	public ExceptionResult(HttpException e) {
 		this();
-		CustomException customException = new CustomException();
-		customException.setErrorCode(e.getHttpResponseStatusCode());
-		customException.setErrorTitle(e.getMessage());
+		ApiException apiException = new ApiException();
+		apiException.setErrorCode(e.getHttpResponseStatusCode());
+		apiException.setErrorTitle(e.getMessage());
 
-		setApiObject(customException);
+		setApiObject(apiException);
 	}
 
 	/**
@@ -46,8 +46,8 @@ public class ExceptionResult extends ApiSingleResult {
 	 */
 	public ExceptionResult(HttpServletRequest httpRequest) {
 		this();
-		CustomException customException = new CustomException();
-		setApiObject(customException);
+		ApiException apiException = new ApiException();
+		setApiObject(apiException);
 
 		String errorTitle = null;
 		String errorDescription;
@@ -55,18 +55,18 @@ public class ExceptionResult extends ApiSingleResult {
 		Object objectCode = httpRequest.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
 		if (objectCode != null && objectCode instanceof Integer) {
 			// According to DOCs, always an Integer
-			customException.setErrorCode((Integer) objectCode);
+			apiException.setErrorCode((Integer) objectCode);
 		} else {
-			customException.setErrorCode(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-			customException.setErrorDescription("Unknown status_code: " + objectCode);
+			apiException.setErrorCode(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+			apiException.setErrorDescription("Unknown status_code: " + objectCode);
 			return;
 		}
 
 		boolean logWarning = true;
 		Object objectMessage = httpRequest.getAttribute(RequestDispatcher.ERROR_MESSAGE);
 		String localMessage = objectMessage != null ? objectMessage.toString() : null;
-		customException.setErrorDescription(localMessage);
-		switch (customException.getErrorCode()) {
+		apiException.setErrorDescription(localMessage);
+		switch (apiException.getErrorCode()) {
 		case 400:
 			errorTitle = "Bad request";
 			errorDescription = localMessage;
@@ -100,10 +100,10 @@ public class ExceptionResult extends ApiSingleResult {
 			break;
 		}
 		if (logWarning) {
-			logger.log(Level.WARNING, "Returned code " + customException.getErrorCode() + ": " + errorDescription);
+			logger.log(Level.WARNING, "Returned code " + apiException.getErrorCode() + ": " + errorDescription);
 		}
-		customException.setErrorTitle(errorTitle);
-		customException.setErrorDescription(errorDescription);
+		apiException.setErrorTitle(errorTitle);
+		apiException.setErrorDescription(errorDescription);
 	}
 
 }

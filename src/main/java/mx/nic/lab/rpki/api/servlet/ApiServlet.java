@@ -19,7 +19,7 @@ import mx.nic.lab.rpki.api.result.ExceptionResult;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.exception.http.HttpException;
 import mx.nic.lab.rpki.db.exception.http.NotFoundException;
-import mx.nic.lab.rpki.db.pojo.CustomException;
+import mx.nic.lab.rpki.db.pojo.ApiException;
 
 /**
  * Base class of all API servlets, implements all the supported request methods
@@ -97,7 +97,7 @@ public abstract class ApiServlet extends HttpServlet {
 		} else if (result instanceof ExceptionResult) {
 			// It was an error handled by the ExceptionServlet
 			ExceptionResult er = (ExceptionResult) result;
-			CustomException ce = (CustomException) er.getApiObject();
+			ApiException ce = (ApiException) er.getApiObject();
 			responseCode = ce.getErrorCode();
 		}
 
