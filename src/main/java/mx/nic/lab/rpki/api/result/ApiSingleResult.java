@@ -1,5 +1,7 @@
 package mx.nic.lab.rpki.api.result;
 
+import javax.json.JsonObject;
+
 import mx.nic.lab.rpki.db.pojo.ApiObject;
 
 /**
@@ -21,10 +23,10 @@ public abstract class ApiSingleResult extends ApiResult {
 
 	@Override
 	public String toJsonString() {
-		if (getApiObject() != null) {
-			return getApiObject().toJsonObject().toString();
+		if (apiObject == null) {
+			return JsonObject.EMPTY_JSON_OBJECT.toString();
 		}
-		return "{}";
+		return apiObject.toJsonObject().toString();
 	}
 
 }

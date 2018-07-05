@@ -2,6 +2,10 @@ package mx.nic.lab.rpki.api.result;
 
 import java.util.List;
 
+import javax.json.Json;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObject;
+
 import mx.nic.lab.rpki.db.pojo.ApiObject;
 
 /**
@@ -23,15 +27,12 @@ public abstract class ApiListResult extends ApiResult {
 
 	@Override
 	public String toJsonString() {
-		if (apiObjects != null) {
-			StringBuilder sb = new StringBuilder();
-			sb.append("[");
-			apiObjects.forEach(obj -> sb.append(obj.toJsonObject().toString()).append(","));
-			sb.deleteCharAt(sb.length() - 1);
-			sb.append("]");
-			return sb.toString();
+		if (apiObjects == null) {
+			return JsonObject.EMPTY_JSON_ARRAY.toString();
 		}
-		return "[]";
+		JsonArrayBuilder jsonBuilder = Json.createArrayBuilder();
+		apiObjects.forEach(obj -> jsonBuilder.add(obj.toJsonObject()));
+		return jsonBuilder.build().toString();
 	}
 
 }
