@@ -3,6 +3,10 @@ package mx.nic.lab.rpki.api.result;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.json.Json;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
+import javax.json.JsonStructure;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -14,7 +18,7 @@ import mx.nic.lab.rpki.db.pojo.ApiException;
  * A result from a exception generated in a request, extends from
  * {@link ApiSingleResult}
  */
-public class ExceptionResult extends ApiSingleResult {
+public class ExceptionResult extends ApiSingleResult<ApiException> {
 
 	private final static Logger logger = Logger.getLogger(ExceptionResult.class.getName());
 
@@ -104,6 +108,27 @@ public class ExceptionResult extends ApiSingleResult {
 		}
 		apiException.setErrorTitle(errorTitle);
 		apiException.setErrorDescription(errorDescription);
+	}
+
+	@Override
+	public JsonStructure toJsonStructure() {
+		ApiException exception = getApiObject();
+		if (exception == null) {
+			return JsonObject.EMPTY_JSON_OBJECT;
+		}
+		JsonObjectBuilder builder = Json.createObjectBuilder();
+		builder.add("code", exception.getErrorCode());
+		if (exception.getErrorTitle() != null) {
+			builder.add("title", exception.getErrorTitle());
+		} else {
+			builder.addNull("title");
+		}
+		if (exception.getErrorDescription() != null) {
+			builder.add("description", exception.getErrorDescription());
+		} else {
+			builder.addNull("description");
+		}
+		return builder.build();
 	}
 
 }

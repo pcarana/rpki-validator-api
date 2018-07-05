@@ -2,37 +2,25 @@ package mx.nic.lab.rpki.api.result;
 
 import java.util.List;
 
-import javax.json.Json;
-import javax.json.JsonArrayBuilder;
-import javax.json.JsonObject;
-
 import mx.nic.lab.rpki.db.pojo.ApiObject;
 
 /**
  * Result corresponding to a list of {@link ApiObject}, extends from
  * {@link ApiResult}
  *
+ * @param <T>
+ *            Type of the {@link ApiObject} list
  */
-public abstract class ApiListResult extends ApiResult {
+public abstract class ApiListResult<T> extends ApiResult {
 
-	private List<? extends ApiObject> apiObjects;
+	private List<? extends T> apiObjects;
 
-	public List<? extends ApiObject> getApiObjects() {
+	public List<? extends T> getApiObjects() {
 		return apiObjects;
 	}
 
-	public void setApiObjects(List<? extends ApiObject> apiObjects) {
+	public void setApiObjects(List<? extends T> apiObjects) {
 		this.apiObjects = apiObjects;
-	}
-
-	@Override
-	public String toJsonString() {
-		if (apiObjects == null) {
-			return JsonObject.EMPTY_JSON_ARRAY.toString();
-		}
-		JsonArrayBuilder jsonBuilder = Json.createArrayBuilder();
-		apiObjects.forEach(obj -> jsonBuilder.add(obj.toJsonObject()));
-		return jsonBuilder.build().toString();
 	}
 
 }
