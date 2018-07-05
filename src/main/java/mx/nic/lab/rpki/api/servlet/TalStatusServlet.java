@@ -6,7 +6,7 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 
 import mx.nic.lab.rpki.api.result.ApiResult;
-import mx.nic.lab.rpki.api.result.TalResult;
+import mx.nic.lab.rpki.api.result.TalStatusResult;
 import mx.nic.lab.rpki.api.util.Util;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.exception.http.BadRequestException;
@@ -40,12 +40,7 @@ public class TalStatusServlet extends TalServlet {
 		if (tal == null) {
 			return null;
 		}
-		tal.setLastSync(null);
-		tal.setName(null);
-		tal.setPublicKey(null);
-		tal.setTalFiles(null);
-		tal.setTalUris(null);
-		return new TalResult(tal);
+		return new TalStatusResult(tal);
 	}
 
 	@Override
