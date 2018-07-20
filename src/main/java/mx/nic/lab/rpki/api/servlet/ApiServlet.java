@@ -73,12 +73,22 @@ public abstract class ApiServlet extends HttpServlet {
 		return jsonString;
 	}
 
-	@Override
-	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+	/**
+	 * Generic handle of all supported requests, gets the {@link ApiResult} and
+	 * builds the response (error or success) to send
+	 * 
+	 * @param requestMethod
+	 * @param req
+	 * @param resp
+	 * @throws ServletException
+	 * @throws IOException
+	 */
+	private void handleRequest(RequestMethod requestMethod, HttpServletRequest req, HttpServletResponse resp)
+			throws ServletException, IOException {
 		int responseCode = HttpServletResponse.SC_OK;
 		ApiResult result;
 		try {
-			result = doApiGet(req);
+			result = doApiRequest(requestMethod, req);
 		} catch (HttpException e) {
 			// Handled error, the result will be the exception sent
 			responseCode = e.getHttpResponseStatusCode();
@@ -112,25 +122,32 @@ public abstract class ApiServlet extends HttpServlet {
 	}
 
 	@Override
-	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		handleRequest(RequestMethod.GET, req, resp);
+	}
 
+	@Override
+	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		handleRequest(RequestMethod.POST, req, resp);
 	}
 
 	@Override
 	protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-
+		handleRequest(RequestMethod.PUT, req, resp);
 	}
 
 	@Override
 	protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-
+		handleRequest(RequestMethod.DELETE, req, resp);
 	}
 
 	/**
-	 * Handles the `request` GET request and builds a response. Think of it as a
-	 * {@link HttpServlet#doGet(HttpServletRequest, HttpServletResponse)}, except
-	 * the response will be built for you.
+	 * Handles the request and builds a response. Each servlet that extends the
+	 * {@link ApiServlet} will handle the supported methods. The response will be
+	 * built for you at {@link ApiServlet}.
 	 * 
+	 * @param requestMethod
+	 *            the request Method
 	 * @param request
 	 *            request to the servlet.
 	 * @return response to the user.
@@ -139,5 +156,7 @@ public abstract class ApiServlet extends HttpServlet {
 	 * @throws ApiDataAccessException
 	 *             Generic errors from the data access
 	 */
-	protected abstract ApiResult doApiGet(HttpServletRequest request) throws HttpException, ApiDataAccessException;
+	protected abstract ApiResult doApiRequest(RequestMethod requestMethod, HttpServletRequest request)
+			throws HttpException, ApiDataAccessException;
+
 }

@@ -9,6 +9,7 @@ import mx.nic.lab.rpki.api.result.ExceptionResult;
 import mx.nic.lab.rpki.api.result.ApiResult;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.exception.http.HttpException;
+import mx.nic.lab.rpki.db.exception.http.MethodNotAllowedException;
 
 /**
  * Servlet to catch unhandled exceptions
@@ -23,7 +24,11 @@ public class ExceptionServlet extends ApiServlet {
 	private static final long serialVersionUID = 1L;
 
 	@Override
-	protected ApiResult doApiGet(HttpServletRequest request) throws HttpException, ApiDataAccessException {
+	protected ApiResult doApiRequest(RequestMethod requestMethod, HttpServletRequest request)
+			throws HttpException, ApiDataAccessException {
+		if (!RequestMethod.GET.equals(requestMethod)) {
+			throw new MethodNotAllowedException();
+		}
 		Object object = request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
 		// The servlet was accesed directly
 		if (object == null) {

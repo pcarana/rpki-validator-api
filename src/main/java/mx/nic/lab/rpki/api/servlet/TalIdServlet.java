@@ -1,5 +1,6 @@
 package mx.nic.lab.rpki.api.servlet;
 
+import java.util.Arrays;
 import java.util.List;
 
 import javax.servlet.annotation.WebServlet;
@@ -27,7 +28,7 @@ public class TalIdServlet extends TalServlet {
 	private static final long serialVersionUID = 1L;
 
 	@Override
-	protected ApiResult doApiDaGet(HttpServletRequest request, TalDAO dao)
+	protected ApiResult doApiDaRequest(RequestMethod requestMethod, HttpServletRequest request, TalDAO dao)
 			throws HttpException, ApiDataAccessException {
 		List<String> additionalPathInfo = Util.getAdditionaPathInfo(request, 1, false);
 		Long id = null;
@@ -46,6 +47,11 @@ public class TalIdServlet extends TalServlet {
 	@Override
 	protected String getServedObjectName() {
 		return "talId";
+	}
+
+	@Override
+	protected List<RequestMethod> getSupportedRequestMethods() {
+		return Arrays.asList(RequestMethod.GET);
 	}
 
 }
