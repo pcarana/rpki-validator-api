@@ -34,7 +34,7 @@ public class TalIdServlet extends TalServlet {
 		try {
 			id = Long.parseLong(additionalPathInfo.get(0));
 		} catch (NumberFormatException e) {
-			throw new BadRequestException("#{exception.tal.invalidId}", e);
+			throw new BadRequestException("#{exception.invalidId}", e);
 		}
 		Tal tal = dao.getById(id);
 		if (tal == null) {
