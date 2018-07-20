@@ -67,8 +67,8 @@ public class TalResult extends ApiSingleResult<Tal> {
 	 * @param tal
 	 */
 	protected void buildTalUris(JsonObjectBuilder builder, Tal tal) {
-		if (tal.getTalUris() == null) {
-			builder.add("talUris", JsonObject.EMPTY_JSON_ARRAY);
+		if (tal.getTalUris() == null || tal.getTalUris().isEmpty()) {
+			builder.add("uri", JsonObject.EMPTY_JSON_ARRAY);
 			return;
 		}
 		JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
@@ -97,7 +97,7 @@ public class TalResult extends ApiSingleResult<Tal> {
 			}
 			arrayBuilder.add(objBuilder);
 		}
-		builder.add("talUris", arrayBuilder);
+		builder.add("uri", arrayBuilder);
 	}
 
 	/**
@@ -108,8 +108,8 @@ public class TalResult extends ApiSingleResult<Tal> {
 	 * @param tal
 	 */
 	protected void buildTalFiles(JsonObjectBuilder builder, Tal tal) {
-		if (tal.getTalFiles() == null) {
-			builder.add("talFiles", JsonObject.EMPTY_JSON_ARRAY);
+		if (tal.getTalFiles() == null || tal.getTalFiles().isEmpty()) {
+			builder.add("files", JsonObject.EMPTY_JSON_ARRAY);
 			return;
 		}
 		JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
@@ -142,6 +142,6 @@ public class TalResult extends ApiSingleResult<Tal> {
 			}
 			arrayBuilder.add(objBuilder);
 		}
-		builder.add("talFiles", arrayBuilder);
+		builder.add("files", arrayBuilder);
 	}
 }
