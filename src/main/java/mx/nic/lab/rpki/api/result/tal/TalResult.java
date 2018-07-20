@@ -1,4 +1,4 @@
-package mx.nic.lab.rpki.api.result;
+package mx.nic.lab.rpki.api.result.tal;
 
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
@@ -6,6 +6,7 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonStructure;
 
+import mx.nic.lab.rpki.api.result.ApiSingleResult;
 import mx.nic.lab.rpki.db.pojo.Tal;
 import mx.nic.lab.rpki.db.pojo.TalFile;
 import mx.nic.lab.rpki.db.pojo.TalUri;

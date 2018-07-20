@@ -1,19 +1,20 @@
-package mx.nic.lab.rpki.api.result;
+package mx.nic.lab.rpki.api.result.tal;
 
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonStructure;
 
+import mx.nic.lab.rpki.api.result.ApiSingleResult;
 import mx.nic.lab.rpki.db.pojo.Tal;
 
 /**
- * Result that represents the status of sync of a single Tal
+ * Result that represents a single Tal that will be synchronized
  *
  */
-public class TalStatusResult extends ApiSingleResult<Tal> {
+public class TalSyncOneResult extends ApiSingleResult<Tal> {
 
-	public TalStatusResult(Tal tal) {
+	public TalSyncOneResult(Tal tal) {
 		super();
 		setApiObject(tal);
 	}
@@ -40,8 +41,12 @@ public class TalStatusResult extends ApiSingleResult<Tal> {
 		} else {
 			builder.addNull("status");
 		}
+		if (tal.getName() != null) {
+			builder.add("name", tal.getName());
+		} else {
+			builder.addNull("name");
+		}
 
 		return builder.build();
 	}
-
 }

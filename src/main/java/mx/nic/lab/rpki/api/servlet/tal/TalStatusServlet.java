@@ -7,7 +7,7 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 
 import mx.nic.lab.rpki.api.result.ApiResult;
-import mx.nic.lab.rpki.api.result.TalStatusResult;
+import mx.nic.lab.rpki.api.result.tal.TalStatusResult;
 import mx.nic.lab.rpki.api.servlet.RequestMethod;
 import mx.nic.lab.rpki.api.util.Util;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;

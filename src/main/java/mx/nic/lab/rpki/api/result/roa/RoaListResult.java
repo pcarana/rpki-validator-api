@@ -1,4 +1,4 @@
-package mx.nic.lab.rpki.api.result;
+package mx.nic.lab.rpki.api.result.roa;
 
 import java.util.List;
 
@@ -7,28 +7,29 @@ import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonStructure;
 
-import mx.nic.lab.rpki.db.pojo.Tal;
+import mx.nic.lab.rpki.api.result.ApiListResult;
+import mx.nic.lab.rpki.db.pojo.Roa;
 
 /**
- * Result that represents a list of Tals
+ * Result that represents a list of Roas
  *
  */
-public class TalListResult extends ApiListResult<Tal> {
+public class RoaListResult extends ApiListResult<Roa> {
 
-	public TalListResult(List<Tal> tals) {
+	public RoaListResult(List<Roa> roas) {
 		super();
-		setApiObjects(tals);
+		setApiObjects(roas);
 	}
 
 	@Override
 	public JsonStructure toJsonStructure() {
-		if (getApiObjects() == null) {
+		if (getApiObjects() == null || getApiObjects().isEmpty()) {
 			return JsonObject.EMPTY_JSON_ARRAY;
 		}
 		JsonArrayBuilder jsonBuilder = Json.createArrayBuilder();
-		// Use the TalResult implementation
+		// Use the RoaResult implementation
 		getApiObjects().forEach(obj -> {
-			TalResult temp = new TalResult(obj);
+			RoaResult temp = new RoaResult(obj);
 			jsonBuilder.add(temp.toJsonStructure());
 		});
 		return jsonBuilder.build();

@@ -1,4 +1,4 @@
-package mx.nic.lab.rpki.api.result;
+package mx.nic.lab.rpki.api.result.tal;
 
 import java.util.List;
 
@@ -7,28 +7,29 @@ import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonStructure;
 
-import mx.nic.lab.rpki.db.pojo.Roa;
+import mx.nic.lab.rpki.api.result.ApiListResult;
+import mx.nic.lab.rpki.db.pojo.Tal;
 
 /**
- * Result that represents a list of Roas
+ * Result that represents a list of Tals that will be synchronized
  *
  */
-public class RoaListResult extends ApiListResult<Roa> {
+public class TalSyncAllResult extends ApiListResult<Tal> {
 
-	public RoaListResult(List<Roa> roas) {
+	public TalSyncAllResult(List<Tal> tals) {
 		super();
-		setApiObjects(roas);
+		setApiObjects(tals);
 	}
 
 	@Override
 	public JsonStructure toJsonStructure() {
-		if (getApiObjects() == null || getApiObjects().isEmpty()) {
+		if (getApiObjects() == null) {
 			return JsonObject.EMPTY_JSON_ARRAY;
 		}
 		JsonArrayBuilder jsonBuilder = Json.createArrayBuilder();
-		// Use the RoaResult implementation
+		// Use the TalResult implementation
 		getApiObjects().forEach(obj -> {
-			RoaResult temp = new RoaResult(obj);
+			TalSyncOneResult temp = new TalSyncOneResult(obj);
 			jsonBuilder.add(temp.toJsonStructure());
 		});
 		return jsonBuilder.build();
