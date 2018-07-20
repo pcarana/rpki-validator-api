@@ -1,5 +1,6 @@
-package mx.nic.lab.rpki.api.servlet;
+package mx.nic.lab.rpki.api.servlet.tal;
 
+import mx.nic.lab.rpki.api.servlet.DataAccessServlet;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.service.DataAccessService;
 import mx.nic.lab.rpki.db.spi.TalDAO;

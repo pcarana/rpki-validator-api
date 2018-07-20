@@ -1,4 +1,4 @@
-package mx.nic.lab.rpki.api.servlet;
+package mx.nic.lab.rpki.api.servlet.roa;
 
 import java.util.Arrays;
 import java.util.List;
@@ -7,18 +7,21 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 
 import mx.nic.lab.rpki.api.result.ApiResult;
-import mx.nic.lab.rpki.api.result.RoaListResult;
+import mx.nic.lab.rpki.api.result.RoaResult;
+import mx.nic.lab.rpki.api.servlet.RequestMethod;
+import mx.nic.lab.rpki.api.util.Util;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
+import mx.nic.lab.rpki.db.exception.http.BadRequestException;
 import mx.nic.lab.rpki.db.exception.http.HttpException;
 import mx.nic.lab.rpki.db.pojo.Roa;
 import mx.nic.lab.rpki.db.spi.RoaDAO;
 
 /**
- * Servlet to provide all the ROAs
+ * Servlet to provide ROAs by its ID
  *
  */
-@WebServlet(name = "roaList", value = { "/roa" })
-public class RoaListServlet extends RoaServlet {
+@WebServlet(name = "roaId", urlPatterns = { "/roa/*" })
+public class RoaIdServlet extends RoaServlet {
 
 	/**
 	 * Serial version ID
@@ -28,13 +31,23 @@ public class RoaListServlet extends RoaServlet {
 	@Override
 	protected ApiResult doApiDaRequest(RequestMethod requestMethod, HttpServletRequest request, RoaDAO dao)
 			throws HttpException, ApiDataAccessException {
-		List<Roa> roas = dao.getAll();
-		return new RoaListResult(roas);
+		List<String> additionalPathInfo = Util.getAdditionaPathInfo(request, 1, false);
+		Long id = null;
+		try {
+			id = Long.parseLong(additionalPathInfo.get(0));
+		} catch (NumberFormatException e) {
+			throw new BadRequestException("#{exception.invalidId}", e);
+		}
+		Roa roa = dao.getById(id);
+		if (roa == null) {
+			return null;
+		}
+		return new RoaResult(roa);
 	}
 
 	@Override
 	protected String getServedObjectName() {
-		return "roaList";
+		return "roaId";
 	}
 
 	@Override

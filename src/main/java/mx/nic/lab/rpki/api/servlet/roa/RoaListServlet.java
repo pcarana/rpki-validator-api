@@ -1,4 +1,4 @@
-package mx.nic.lab.rpki.api.servlet;
+package mx.nic.lab.rpki.api.servlet.roa;
 
 import java.util.Arrays;
 import java.util.List;
@@ -7,18 +7,19 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 
 import mx.nic.lab.rpki.api.result.ApiResult;
-import mx.nic.lab.rpki.api.result.TalListResult;
+import mx.nic.lab.rpki.api.result.RoaListResult;
+import mx.nic.lab.rpki.api.servlet.RequestMethod;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.exception.http.HttpException;
-import mx.nic.lab.rpki.db.pojo.Tal;
-import mx.nic.lab.rpki.db.spi.TalDAO;
+import mx.nic.lab.rpki.db.pojo.Roa;
+import mx.nic.lab.rpki.db.spi.RoaDAO;
 
 /**
- * Servlet to provide all the configured TALs
+ * Servlet to provide all the ROAs
  *
  */
-@WebServlet(name = "talList", value = { "/tal" })
-public class TalListServlet extends TalServlet {
+@WebServlet(name = "roaList", value = { "/roa" })
+public class RoaListServlet extends RoaServlet {
 
 	/**
 	 * Serial version ID
@@ -26,15 +27,15 @@ public class TalListServlet extends TalServlet {
 	private static final long serialVersionUID = 1L;
 
 	@Override
-	protected ApiResult doApiDaRequest(RequestMethod requestMethod, HttpServletRequest request, TalDAO dao)
+	protected ApiResult doApiDaRequest(RequestMethod requestMethod, HttpServletRequest request, RoaDAO dao)
 			throws HttpException, ApiDataAccessException {
-		List<Tal> tals = dao.getAll();
-		return new TalListResult(tals);
+		List<Roa> roas = dao.getAll();
+		return new RoaListResult(roas);
 	}
 
 	@Override
 	protected String getServedObjectName() {
-		return "talList";
+		return "roaList";
 	}
 
 	@Override
