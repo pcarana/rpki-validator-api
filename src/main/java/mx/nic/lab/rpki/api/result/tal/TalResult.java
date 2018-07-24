@@ -29,31 +29,11 @@ public class TalResult extends ApiSingleResult<Tal> {
 			return JsonObject.EMPTY_JSON_OBJECT;
 		}
 		JsonObjectBuilder builder = Json.createObjectBuilder();
-		if (tal.getId() != null) {
-			builder.add("id", tal.getId());
-		} else {
-			builder.addNull("id");
-		}
-		if (tal.getLastSync() != null) {
-			builder.add("lastSync", tal.getLastSync());
-		} else {
-			builder.addNull("lastSync");
-		}
-		if (tal.getPublicKey() != null) {
-			builder.add("publicKey", tal.getPublicKey());
-		} else {
-			builder.addNull("publicKey");
-		}
-		if (tal.getStatus() != null) {
-			builder.add("status", tal.getStatus());
-		} else {
-			builder.addNull("status");
-		}
-		if (tal.getName() != null) {
-			builder.add("name", tal.getName());
-		} else {
-			builder.addNull("name");
-		}
+		addKeyValueToBuilder(builder, "id", tal.getId(), true);
+		addKeyValueToBuilder(builder, "lastSync", tal.getLastSync(), true);
+		addKeyValueToBuilder(builder, "publicKey", tal.getPublicKey(), true);
+		addKeyValueToBuilder(builder, "status", tal.getStatus(), true);
+		addKeyValueToBuilder(builder, "name", tal.getName(), true);
 		buildTalUris(builder, tal);
 		buildTalFiles(builder, tal);
 
@@ -75,27 +55,11 @@ public class TalResult extends ApiSingleResult<Tal> {
 		JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
 		for (TalUri talUri : tal.getTalUris()) {
 			JsonObjectBuilder objBuilder = Json.createObjectBuilder();
-			if (talUri.getId() != null) {
-				builder.add("id", talUri.getId());
-			} else {
-				builder.addNull("id");
-			}
-			if (talUri.getValue() != null) {
-				builder.add("value", talUri.getValue());
-			} else {
-				builder.addNull("value");
-			}
+			addKeyValueToBuilder(objBuilder, "id", talUri.getId(), true);
+			addKeyValueToBuilder(objBuilder, "value", talUri.getValue(), true);
 			// FIXME Return as valid JSON maybe?
-			if (talUri.getLoadedCer() != null) {
-				builder.add("loadedCer", talUri.getLoadedCer().toString());
-			} else {
-				builder.addNull("loadedCer");
-			}
-			if (talUri.getLoaded() != null) {
-				builder.add("loaded", talUri.getLoaded());
-			} else {
-				builder.addNull("loaded");
-			}
+			addKeyValueToBuilder(objBuilder, "loadedCer", talUri.getLoadedCer().toString(), true);
+			addKeyValueToBuilder(objBuilder, "loaded", talUri.getLoaded(), true);
 			arrayBuilder.add(objBuilder);
 		}
 		builder.add("uri", arrayBuilder);
@@ -116,31 +80,11 @@ public class TalResult extends ApiSingleResult<Tal> {
 		JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
 		for (TalFile talFile : tal.getTalFiles()) {
 			JsonObjectBuilder objBuilder = Json.createObjectBuilder();
-			if (talFile.getId() != null) {
-				builder.add("id", talFile.getId());
-			} else {
-				builder.addNull("id");
-			}
-			if (talFile.getFileType() != null) {
-				builder.add("fileType", talFile.getFileType());
-			} else {
-				builder.addNull("fileType");
-			}
-			if (talFile.getStatus() != null) {
-				builder.add("status", talFile.getStatus().toString());
-			} else {
-				builder.addNull("status");
-			}
-			if (talFile.getMessage() != null) {
-				builder.add("message", talFile.getMessage());
-			} else {
-				builder.addNull("message");
-			}
-			if (talFile.getLocation() != null) {
-				builder.add("location", talFile.getLocation());
-			} else {
-				builder.addNull("location");
-			}
+			addKeyValueToBuilder(objBuilder, "id", talFile.getId(), true);
+			addKeyValueToBuilder(objBuilder, "fileType", talFile.getFileType(), true);
+			addKeyValueToBuilder(objBuilder, "status", talFile.getStatus().toString(), true);
+			addKeyValueToBuilder(objBuilder, "message", talFile.getMessage(), true);
+			addKeyValueToBuilder(objBuilder, "location", talFile.getLocation(), true);
 			arrayBuilder.add(objBuilder);
 		}
 		builder.add("files", arrayBuilder);

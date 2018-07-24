@@ -26,26 +26,10 @@ public class TalSyncOneResult extends ApiSingleResult<Tal> {
 			return JsonObject.EMPTY_JSON_OBJECT;
 		}
 		JsonObjectBuilder builder = Json.createObjectBuilder();
-		if (tal.getId() != null) {
-			builder.add("id", tal.getId());
-		} else {
-			builder.addNull("id");
-		}
-		if (tal.getLastSync() != null) {
-			builder.add("lastSync", tal.getLastSync());
-		} else {
-			builder.addNull("lastSync");
-		}
-		if (tal.getStatus() != null) {
-			builder.add("status", tal.getStatus());
-		} else {
-			builder.addNull("status");
-		}
-		if (tal.getName() != null) {
-			builder.add("name", tal.getName());
-		} else {
-			builder.addNull("name");
-		}
+		addKeyValueToBuilder(builder, "id", tal.getId(), true);
+		addKeyValueToBuilder(builder, "lastSync", tal.getLastSync(), true);
+		addKeyValueToBuilder(builder, "status", tal.getStatus(), true);
+		addKeyValueToBuilder(builder, "name", tal.getName(), true);
 
 		return builder.build();
 	}

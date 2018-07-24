@@ -26,21 +26,9 @@ public class TalStatusResult extends ApiSingleResult<Tal> {
 			return JsonObject.EMPTY_JSON_OBJECT;
 		}
 		JsonObjectBuilder builder = Json.createObjectBuilder();
-		if (tal.getId() != null) {
-			builder.add("id", tal.getId());
-		} else {
-			builder.addNull("id");
-		}
-		if (tal.getLastSync() != null) {
-			builder.add("lastSync", tal.getLastSync());
-		} else {
-			builder.addNull("lastSync");
-		}
-		if (tal.getStatus() != null) {
-			builder.add("status", tal.getStatus());
-		} else {
-			builder.addNull("status");
-		}
+		addKeyValueToBuilder(builder, "id", tal.getId(), true);
+		addKeyValueToBuilder(builder, "lastSync", tal.getLastSync(), true);
+		addKeyValueToBuilder(builder, "status", tal.getStatus(), true);
 
 		return builder.build();
 	}

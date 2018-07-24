@@ -50,37 +50,12 @@ public class RoaResult extends ApiSingleResult<Roa> {
 			return JsonObject.EMPTY_JSON_OBJECT;
 		}
 		JsonObjectBuilder builder = Json.createObjectBuilder();
-		if (roa.getId() != null) {
-			builder.add("id", roa.getId());
-		} else {
-			builder.addNull("id");
-		}
-		if (roa.getAsn() != null) {
-			builder.add("asn", roa.getAsn());
-		} else {
-			builder.addNull("asn");
-		}
-		if (roa.getPrefixText() != null) {
-			builder.add("prefix", roa.getPrefixText());
-		} else {
-			builder.addNull("prefix");
-		}
-		if (roa.getPrefixLength() != null) {
-			builder.add("prefixLength", roa.getPrefixLength());
-		} else {
-			builder.addNull("prefixLength");
-		}
-		if (roa.getPrefixMaxLength() != null) {
-			builder.add("prefixMaxLength", roa.getPrefixMaxLength());
-		} else {
-			builder.addNull("prefixMaxLength");
-		}
-		JsonObject cmsObject = getCmsAsJson(roa.getCmsData());
-		if (cmsObject != null) {
-			builder.add("cms", cmsObject);
-		} else {
-			builder.addNull("cms");
-		}
+		addKeyValueToBuilder(builder, "id", roa.getId(), true);
+		addKeyValueToBuilder(builder, "asn", roa.getAsn(), true);
+		addKeyValueToBuilder(builder, "prefix", roa.getPrefixText(), true);
+		addKeyValueToBuilder(builder, "prefixLength", roa.getPrefixLength(), true);
+		addKeyValueToBuilder(builder, "prefixMaxLength", roa.getPrefixMaxLength(), true);
+		addKeyValueToBuilder(builder, "cms", getCmsAsJson(roa.getCmsData()), true);
 		buildRoaGbrs(builder, roa);
 
 		return builder.build();
@@ -101,17 +76,8 @@ public class RoaResult extends ApiSingleResult<Roa> {
 		JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
 		for (Gbr gbr : roa.getGbrs()) {
 			JsonObjectBuilder objBuilder = Json.createObjectBuilder();
-			if (gbr.getVcard() != null) {
-				builder.add("vcard", gbr.getVcard());
-			} else {
-				builder.addNull("vcard");
-			}
-			JsonObject cmsObject = getCmsAsJson(gbr.getCmsData());
-			if (cmsObject != null) {
-				builder.add("cms", cmsObject);
-			} else {
-				builder.addNull("cms");
-			}
+			addKeyValueToBuilder(objBuilder, "vcard", gbr.getVcard(), true);
+			addKeyValueToBuilder(objBuilder, "cms", getCmsAsJson(gbr.getCmsData()), true);
 			arrayBuilder.add(objBuilder);
 		}
 		builder.add("gbr", arrayBuilder);
