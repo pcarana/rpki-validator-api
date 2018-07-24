@@ -20,7 +20,7 @@ import mx.nic.lab.rpki.db.pojo.ApiException;
  */
 public class ExceptionResult extends ApiSingleResult<ApiException> {
 
-	private final static Logger logger = Logger.getLogger(ExceptionResult.class.getName());
+	private static final Logger logger = Logger.getLogger(ExceptionResult.class.getName());
 
 	/**
 	 * Empty constructor
