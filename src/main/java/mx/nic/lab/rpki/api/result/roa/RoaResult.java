@@ -2,6 +2,7 @@ package mx.nic.lab.rpki.api.result.roa;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -12,9 +13,15 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonStructure;
 
+import org.bouncycastle.asn1.ASN1BitString;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.ASN1Integer;
+import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.ASN1StreamParser;
+import org.bouncycastle.asn1.DERBitString;
+import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.cms.Attribute;
 import org.bouncycastle.asn1.cms.ContentInfo;
 import org.bouncycastle.asn1.cms.SignedData;
@@ -38,6 +45,13 @@ public class RoaResult extends ApiSingleResult<Roa> {
 
 	private static final Logger logger = Logger.getLogger(RoaResult.class.getName());
 
+	/**
+	 * Supported CMS profiles, used to know how to parse the content
+	 */
+	private enum CMSProfile {
+		ROA, GBR
+	}
+
 	public RoaResult(Roa roa) {
 		super();
 		setApiObject(roa);
@@ -55,7 +69,7 @@ public class RoaResult extends ApiSingleResult<Roa> {
 		addKeyValueToBuilder(builder, "prefix", roa.getPrefixText(), true);
 		addKeyValueToBuilder(builder, "prefixLength", roa.getPrefixLength(), true);
 		addKeyValueToBuilder(builder, "prefixMaxLength", roa.getPrefixMaxLength(), true);
-		addKeyValueToBuilder(builder, "cms", getCmsAsJson(roa.getCmsData()), true);
+		addKeyValueToBuilder(builder, "cms", getCmsAsJson(roa.getCmsData(), CMSProfile.ROA), true);
 		buildRoaGbrs(builder, roa);
 
 		return builder.build();
@@ -76,14 +90,27 @@ public class RoaResult extends ApiSingleResult<Roa> {
 		JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
 		for (Gbr gbr : roa.getGbrs()) {
 			JsonObjectBuilder objBuilder = Json.createObjectBuilder();
+			// The id is omitted since is used for internal purposes
 			addKeyValueToBuilder(objBuilder, "vcard", gbr.getVcard(), true);
-			addKeyValueToBuilder(objBuilder, "cms", getCmsAsJson(gbr.getCmsData()), true);
+			addKeyValueToBuilder(objBuilder, "cms", getCmsAsJson(gbr.getCmsData(), CMSProfile.GBR), true);
 			arrayBuilder.add(objBuilder);
 		}
 		builder.add("gbr", arrayBuilder);
 	}
 
-	private JsonObject getCmsAsJson(byte[] cmsData) {
+	/**
+	 * Return the CMS data as a {@link JsonObject} (originally received as a byte
+	 * array). The parsing is based on RFC 6488, and for each of the supported
+	 * objects (ROA and GBR) indicated through the {@link CMSProfile} parse the
+	 * content as expected.
+	 * 
+	 * @param cmsData
+	 *            the CMS as a byte array
+	 * @param cmsProfile
+	 *            CMS profile used to parse the content
+	 * @return CMS as a {@link JsonObject}
+	 */
+	private JsonObject getCmsAsJson(byte[] cmsData, CMSProfile cmsProfile) {
 		if (cmsData == null) {
 			return null;
 		}
@@ -125,8 +152,13 @@ public class RoaResult extends ApiSingleResult<Roa> {
 
 		genericObjectBuilder = Json.createObjectBuilder();
 		genericObjectBuilder.add("eContentType", sData.getEncapContentInfo().getContentType().getId());
-		// FIXME Each object (ROA, MFT, GBR) will define this content
-		genericObjectBuilder.add("eContent", sData.getEncapContentInfo().getContent().toString());
+		ASN1Encodable encodableContent = sData.getEncapContentInfo().getContent();
+		// Each object (ROA, MFT, GBR) defines this content
+		if (cmsProfile == CMSProfile.ROA) {
+			genericObjectBuilder.add("eContent", getRoaContentAsJson(encodableContent));
+		} else if (cmsProfile == CMSProfile.GBR) {
+			genericObjectBuilder.add("eContent", getGbrContentAsString(encodableContent));
+		}
 		contentBuilder.add("encapContentInfo", genericObjectBuilder);
 
 		// RFC 6488 "MUST contain exactly one certificate, the RPKI end-entity (EE)"
@@ -183,7 +215,7 @@ public class RoaResult extends ApiSingleResult<Roa> {
 				attributeValue = attributeValue.replace("#", "").toUpperCase();
 			} else if (attributeId.equals("1.2.840.113549.1.9.16.2.46")) {
 				// RFC 6488 2.1.6.4.4. Binary-Signing-Time Attribute
-				// FIXME Apparently the toString method may work for this value
+				// Apparently the toString method may work for this value
 			}
 			internalTempBuilder.add("attrValues", Json.createArrayBuilder().add(attributeValue));
 			internalArrBuilder.add(internalTempBuilder);
@@ -211,5 +243,101 @@ public class RoaResult extends ApiSingleResult<Roa> {
 		builder.add("version", certificate.getVersionNumber());
 		builder.add("issuer", certificate.getIssuer().toString());
 		return builder.build();
+	}
+
+	/**
+	 * The ROA content has to be manually parsed using the profile of RFC 6482
+	 * 
+	 * @param roaContent
+	 *            {@link ASN1Encodable} with the EncapContentInfo.Content
+	 * @return {link JsonObject} of the ROA Content
+	 */
+	private JsonObject getRoaContentAsJson(ASN1Encodable roaContent) {
+		JsonObjectBuilder roaContentBuilder = Json.createObjectBuilder();
+		try {
+			ASN1OctetString octetStringRoa = DEROctetString.getInstance(roaContent);
+			ASN1StreamParser asn1ParserRoa = new ASN1StreamParser(octetStringRoa.getOctetStream());
+			ASN1Sequence asn1SequenceRoa = ASN1Sequence.getInstance(asn1ParserRoa.readObject());
+			// Parse backwards, considering that the version isn't explicitly declared
+			// 3 elements are expected (RFC 6482 section 3)
+			int currentObj = asn1SequenceRoa.size() - 1;
+
+			// ipAddrBlocks
+			JsonArrayBuilder ipAddrBlocksBuilder = Json.createArrayBuilder();
+			ASN1Sequence ipAddrSeq = ASN1Sequence.getInstance(asn1SequenceRoa.getObjectAt(currentObj));
+			// Iterate over ROAIPAddressFamily
+			Iterator<ASN1Encodable> ipAddrSeqIterator = ipAddrSeq.iterator();
+			while (ipAddrSeqIterator.hasNext()) {
+				JsonObjectBuilder ipAddrBlockBuilder = Json.createObjectBuilder();
+				ASN1Sequence ipAddrFamSeq = ASN1Sequence.getInstance(ipAddrSeqIterator.next());
+
+				// addressFamily
+				ASN1OctetString addressFamily = ASN1OctetString.getInstance(ipAddrFamSeq.getObjectAt(0));
+				// The toString method adds a "#", remove it
+				ipAddrBlockBuilder.add("addressFamily", addressFamily.toString().replace("#", ""));
+
+				// addresses (another sequence to iterate)
+				JsonArrayBuilder addresessBuilder = Json.createArrayBuilder();
+				ASN1Sequence addressesSeq = ASN1Sequence.getInstance(ipAddrFamSeq.getObjectAt(1));
+				Iterator<ASN1Encodable> addressesIterator = addressesSeq.iterator();
+				while (addressesIterator.hasNext()) {
+					JsonObjectBuilder addressBuilder = Json.createObjectBuilder();
+					ASN1Sequence ipAddressSeq = ASN1Sequence.getInstance(addressesIterator.next());
+
+					// address
+					ASN1BitString address = DERBitString.getInstance(ipAddressSeq.getObjectAt(0));
+					// The getString method adds a "#", remove it
+					addressBuilder.add("address", address.getString().replace("#", ""));
+
+					// maxLenght (Optional)
+					if (ipAddressSeq.size() > 1) {
+						ASN1Integer maxLength = ASN1Integer.getInstance(ipAddressSeq.getObjectAt(1));
+						addressBuilder.add("maxLength", maxLength.getValue());
+					}
+					addresessBuilder.add(addressBuilder);
+				}
+				ipAddrBlockBuilder.add("addresses", addresessBuilder);
+				ipAddrBlocksBuilder.add(ipAddrBlockBuilder);
+			}
+			currentObj--;
+
+			// asID
+			ASN1Integer asid = ASN1Integer.getInstance(asn1SequenceRoa.getObjectAt(currentObj));
+			currentObj--;
+
+			// version
+			if (currentObj >= 0) {
+				ASN1Integer version = ASN1Integer.getInstance(asn1SequenceRoa.getObjectAt(currentObj));
+				roaContentBuilder.add("version", version.getValue());
+			} else {
+				// Not declared, use default value (RFC 6482 section 3.1)
+				roaContentBuilder.add("version", 0);
+			}
+			
+			// And now add the elements "ordered"
+			roaContentBuilder.add("asID", asid.getValue());
+			roaContentBuilder.add("ipAddrBlocks", ipAddrBlocksBuilder);
+		} catch (IOException e) {
+			logger.log(Level.WARNING, "The ROA content couldn't be parsed, returning empty object", e);
+		}
+		return roaContentBuilder.build();
+	}
+
+	/**
+	 * The GBR content has to be manually parsed using the profile of RFC 6493
+	 * 
+	 * @param gbrContent
+	 *            {@link ASN1Encodable} with the EncapContentInfo.Content
+	 * @return <code>String</code> of the GBR Content
+	 */
+	private String getGbrContentAsString(ASN1Encodable gbrContent) {
+		ASN1OctetString octetStringGbr = DEROctetString.getInstance(gbrContent);
+		try {
+			return new String(octetStringGbr.getOctets(), "UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			logger.log(Level.WARNING,
+					"The GBR content couldn't be parsed, returning String representation of the HEX value", e);
+			return Strings.fromByteArray(Hex.encode(octetStringGbr.getOctets()));
+		}
 	}
 }
