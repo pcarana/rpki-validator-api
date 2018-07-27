@@ -236,6 +236,40 @@ public class CMSUtil {
 	}
 
 	/**
+	 * Return the Certificate data as a {@link JsonObject} (originally received as a
+	 * byte array). The parsing is based on RFC 6487 and RFC 5280.
+	 * 
+	 * @param certificateData
+	 *            the Certificate as a byte array
+	 * @return Certificate as a {@link JsonObject}
+	 */
+	public static JsonObject getCertAsJson(byte[] certificateData) {
+		if (certificateData == null) {
+			return null;
+		}
+		// First, try to parse the CMS
+		ASN1InputStream aIn = new ASN1InputStream(new ByteArrayInputStream(certificateData));
+		Certificate cert = null;
+		try {
+			try {
+				cert = Certificate.getInstance(aIn.readObject());
+			} catch (IOException e) {
+				logger.log(Level.WARNING, "The Cert data couldn't be parsed, sending null Cert", e);
+				return null;
+			}
+		} finally {
+			if (aIn != null) {
+				try {
+					aIn.close();
+				} catch (IOException e) {
+					logger.log(Level.WARNING, "Error closing ASN1InputStream, still sending Cert data in response", e);
+				}
+			}
+		}
+		return getCertificateAsJson(cert);
+	}
+
+	/**
 	 * Return a {@link Certificate} as a {@link JsonObject} based on the rules of
 	 * RFC 6487 and RFC 5280
 	 * 

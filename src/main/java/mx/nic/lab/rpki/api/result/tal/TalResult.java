@@ -7,6 +7,7 @@ import javax.json.JsonObjectBuilder;
 import javax.json.JsonStructure;
 
 import mx.nic.lab.rpki.api.result.ApiSingleResult;
+import mx.nic.lab.rpki.api.util.CMSUtil;
 import mx.nic.lab.rpki.db.pojo.Tal;
 import mx.nic.lab.rpki.db.pojo.TalFile;
 import mx.nic.lab.rpki.db.pojo.TalUri;
@@ -57,8 +58,7 @@ public class TalResult extends ApiSingleResult<Tal> {
 			JsonObjectBuilder objBuilder = Json.createObjectBuilder();
 			addKeyValueToBuilder(objBuilder, "id", talUri.getId(), true);
 			addKeyValueToBuilder(objBuilder, "value", talUri.getValue(), true);
-			// FIXME Return as valid JSON maybe?
-			addKeyValueToBuilder(objBuilder, "loadedCer", talUri.getLoadedCer().toString(), true);
+			addKeyValueToBuilder(objBuilder, "loadedCer", CMSUtil.getCertAsJson(talUri.getLoadedCer()), true);
 			addKeyValueToBuilder(objBuilder, "loaded", talUri.getLoaded(), true);
 			arrayBuilder.add(objBuilder);
 		}
