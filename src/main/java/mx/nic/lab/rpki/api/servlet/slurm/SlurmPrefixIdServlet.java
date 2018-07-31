@@ -1,8 +1,16 @@
 package mx.nic.lab.rpki.api.servlet.slurm;
 
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.json.Json;
+import javax.json.JsonNumber;
+import javax.json.JsonObject;
+import javax.json.JsonReader;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -111,8 +119,24 @@ public class SlurmPrefixIdServlet extends SlurmPrefixServlet {
 	 * @throws ApiDataAccessException
 	 */
 	private ApiResult handlePost(HttpServletRequest request, SlurmPrefixDAO dao) throws ApiDataAccessException {
-		// FIXME Complete behavior
-		return null;
+		// Get the service and validate expected body
+		List<String> additionalPathInfo = Util.getAdditionaPathInfo(request, 1, false);
+
+		// Check if is a filter/assertion request
+		int type;
+		String requestedService = additionalPathInfo.get(0);
+		if (requestedService.equals(FILTER_SERVICE)) {
+			type = SlurmPrefix.TYPE_FILTER;
+		} else if (requestedService.equals(ASSERTION_SERVICE)) {
+			type = SlurmPrefix.TYPE_ASSERTION;
+		} else {
+			// Nothing to do, a NotFound Exception will be thrown
+			return null;
+		}
+		SlurmPrefix newSlurmPrefix = getSlurmPrefixFromBody(request, type);
+		newSlurmPrefix.setType(type);
+		SlurmPrefix createdSlurmPrefix = dao.create(newSlurmPrefix);
+		return new SlurmPrefixResult(createdSlurmPrefix);
 	}
 
 	/**
@@ -138,5 +162,114 @@ public class SlurmPrefixIdServlet extends SlurmPrefixServlet {
 			throw new HttpException(HttpServletResponse.SC_SERVICE_UNAVAILABLE, "#{exception.unavailableService}");
 		}
 		return new EmptyResult();
+	}
+
+	private SlurmPrefix getSlurmPrefixFromBody(HttpServletRequest request, int type) throws ApiDataAccessException {
+		SlurmPrefix slurmPrefix = new SlurmPrefix();
+		JsonObject object = null;
+		try (JsonReader reader = Json.createReader(request.getReader())) {
+			object = reader.readObject();
+		} catch (IOException e) {
+			throw new HttpException(500, "Error getting reader");
+		}
+		// Check for extra keys (invalid keys)
+		List<String> invalidKeys = new ArrayList<>();
+		for (String key : object.keySet()) {
+			if (!key.matches("(prefix|asn|maxPrefixLength|comment)")) {
+				invalidKeys.add(key);
+			}
+		}
+		if (!invalidKeys.isEmpty()) {
+			throw new BadRequestException("Invalid keys found: " + invalidKeys.toString());
+		}
+		String prefixRcv = null;
+		try {
+			prefixRcv = object.getString("prefix");
+		} catch (NullPointerException npe) {
+			if (type == SlurmPrefix.TYPE_ASSERTION) {
+				throw new BadRequestException("A prefix is needed");
+			}
+		} catch (ClassCastException cce) {
+			throw new BadRequestException("Invalid prefix data type, String expected");
+		}
+		if (prefixRcv != null) {
+			String[] prefixArr = prefixRcv.split("/");
+			if (prefixArr.length != 2) {
+				throw new BadRequestException("Invalid prefix, must be in format <prefix>/<prefix_length");
+			}
+
+			try {
+				InetAddress prefixAddress = InetAddress.getByName(prefixArr[0]);
+				slurmPrefix.setStartPrefix(prefixAddress.getAddress());
+				slurmPrefix.setPrefixText(prefixAddress.getHostAddress());
+			} catch (UnknownHostException e) {
+				throw new BadRequestException("Invalid prefix");
+			}
+			try {
+				int prefixLength = Integer.valueOf(prefixArr[1]);
+				slurmPrefix.setPrefixLength(prefixLength);
+			} catch (NumberFormatException nfe) {
+				throw new BadRequestException("Invalid prefix length");
+			}
+		}
+		try {
+			// There's no "getLong" method
+			JsonNumber number = object.getJsonNumber("asn");
+			if (number != null) {
+				slurmPrefix.setAsn(number.longValueExact());
+			} else if (type == SlurmPrefix.TYPE_ASSERTION) {
+				throw new BadRequestException("An ASN is needed");
+			}
+		} catch (ClassCastException cce) {
+			throw new BadRequestException("Invalid ASN");
+		}
+
+		try {
+			slurmPrefix.setPrefixMaxLength(object.getInt("maxPrefixLength"));
+		} catch (NullPointerException npe) {
+			// Optional in both cases, do nothing
+		} catch (ClassCastException cce) {
+			throw new BadRequestException("Invalid max prefix length data type, Integer expected");
+		}
+
+		try {
+			slurmPrefix.setComment(object.getString("comment"));
+		} catch (NullPointerException npe) {
+			// It's RECOMMENDED, so expect it as required in both cases
+			throw new BadRequestException("Comment expected");
+		} catch (ClassCastException cce) {
+			throw new BadRequestException("Invalid comment data type, String expected");
+		}
+
+		// Calculate End prefix (if applies, only when there's a Prefix Max Length)
+		if (slurmPrefix.getStartPrefix() != null && slurmPrefix.getPrefixLength() != null
+				&& slurmPrefix.getPrefixMaxLength() != null) {
+			byte[] endPrefix = slurmPrefix.getStartPrefix().clone();
+			int prefixLength = slurmPrefix.getPrefixLength();
+			int maxPrefixLength = slurmPrefix.getPrefixMaxLength();
+			int bytesBase = prefixLength / 8;
+			int bitsBase = prefixLength % 8;
+			int bytesMask = maxPrefixLength / 8;
+			int bitsMask = maxPrefixLength % 8;
+			if (maxPrefixLength > prefixLength && bytesBase < endPrefix.length) {
+				int currByte = bytesBase;
+				if (bytesMask > bytesBase) {
+					endPrefix[currByte] |= (255 >> bitsBase);
+					currByte++;
+					for (; currByte < bytesMask; currByte++) {
+						endPrefix[currByte] |= 255;
+					}
+					bitsBase = 0;
+				}
+				if (currByte < endPrefix.length) {
+					endPrefix[currByte] |= ((byte) (255 << (8 - bitsMask)) & (255 >> bitsBase));
+				}
+			}
+			slurmPrefix.setEndPrefix(endPrefix);
+		} else {
+			slurmPrefix.setEndPrefix(slurmPrefix.getStartPrefix());
+		}
+
+		return slurmPrefix;
 	}
 }
