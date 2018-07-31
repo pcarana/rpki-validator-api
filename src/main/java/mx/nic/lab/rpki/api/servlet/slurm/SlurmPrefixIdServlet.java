@@ -5,14 +5,17 @@ import java.util.List;
 
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import mx.nic.lab.rpki.api.result.ApiResult;
+import mx.nic.lab.rpki.api.result.EmptyResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmPrefixListResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmPrefixResult;
 import mx.nic.lab.rpki.api.servlet.RequestMethod;
 import mx.nic.lab.rpki.api.util.Util;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.exception.http.BadRequestException;
+import mx.nic.lab.rpki.db.exception.http.HttpException;
 import mx.nic.lab.rpki.db.pojo.SlurmPrefix;
 import mx.nic.lab.rpki.db.spi.SlurmPrefixDAO;
 
@@ -123,7 +126,17 @@ public class SlurmPrefixIdServlet extends SlurmPrefixServlet {
 	 * @throws ApiDataAccessException
 	 */
 	private ApiResult handleDelete(HttpServletRequest request, SlurmPrefixDAO dao) throws ApiDataAccessException {
-		// FIXME Complete behavior
-		return null;
+		List<String> additionalPathInfo = Util.getAdditionaPathInfo(request, 1, false);
+		// First check that the object exists
+		Long id = null;
+		try {
+			id = Long.parseLong(additionalPathInfo.get(0));
+		} catch (NumberFormatException e) {
+			throw new BadRequestException("#{exception.invalidId}", e);
+		}
+		if (!dao.deleteById(id)) {
+			throw new HttpException(HttpServletResponse.SC_SERVICE_UNAVAILABLE, "#{exception.unavailableService}");
+		}
+		return new EmptyResult();
 	}
 }
