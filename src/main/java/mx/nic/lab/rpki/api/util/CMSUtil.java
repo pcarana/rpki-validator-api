@@ -56,6 +56,7 @@ import org.bouncycastle.asn1.x509.NoticeReference;
 import org.bouncycastle.asn1.x509.PolicyInformation;
 import org.bouncycastle.asn1.x509.PolicyQualifierInfo;
 import org.bouncycastle.asn1.x509.SubjectKeyIdentifier;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.asn1.x509.TBSCertificate;
 import org.bouncycastle.asn1.x509.UserNotice;
 import org.bouncycastle.util.Strings;
@@ -718,6 +719,46 @@ public class CMSUtil {
 					"The GBR content couldn't be parsed, returning String representation of the HEX value", e);
 			return Strings.fromByteArray(Hex.encode(octetStringGbr.getOctets()));
 		}
+	}
+
+	/**
+	 * Check if the encoded data is a valid {@link SubjectKeyIdentifier}
+	 * 
+	 * @param encodedData
+	 *            data to validate
+	 * @return <code>true</code> if an instance of {@link SubjectKeyIdentifier}
+	 *         could be created (this is the main validation)
+	 */
+	public static boolean isValidSubjectKeyIdentifier(byte[] encodedData) {
+		try {
+			SubjectKeyIdentifier skiInfo = SubjectKeyIdentifier.getInstance(encodedData);
+			if (skiInfo == null) {
+				return false;
+			}
+		} catch (IllegalArgumentException e) {
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Check if the encoded data is a valid {@link SubjectPublicKeyInfo}
+	 * 
+	 * @param encodedData
+	 *            data to validate
+	 * @return <code>true</code> if an instance of {@link SubjectPublicKeyInfo}
+	 *         could be created (this is the main validation)
+	 */
+	public static boolean isValidSubjectPublicKey(byte[] encodedData) {
+		try {
+			SubjectPublicKeyInfo pkInfo = SubjectPublicKeyInfo.getInstance(encodedData);
+			if (pkInfo == null) {
+				return false;
+			}
+		} catch (IllegalArgumentException e) {
+			return false;
+		}
+		return true;
 	}
 
 	/**

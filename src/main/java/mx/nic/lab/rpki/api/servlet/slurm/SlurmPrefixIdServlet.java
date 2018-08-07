@@ -272,7 +272,7 @@ public class SlurmPrefixIdServlet extends SlurmPrefixServlet {
 			if (number != null) {
 				slurmPrefix.setAsn(number.longValueExact());
 			} else if (type == SlurmPrefix.TYPE_ASSERTION) {
-				throw new BadRequestException("#{error.slurm.prefix.asnRequired}");
+				throw new BadRequestException("#{error.slurm.asnRequired}");
 			} else if (slurmPrefix.getStartPrefix() == null) {
 				// In a Filter is optional, but either a prefix or an asn must be present
 				throw new BadRequestException("#{error.slurm.prefix.prefixOrAsnRequired}");
