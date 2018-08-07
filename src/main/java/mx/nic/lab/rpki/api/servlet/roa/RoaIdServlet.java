@@ -6,13 +6,13 @@ import java.util.List;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 
+import mx.nic.lab.rpki.api.exception.BadRequestException;
+import mx.nic.lab.rpki.api.exception.HttpException;
 import mx.nic.lab.rpki.api.result.ApiResult;
 import mx.nic.lab.rpki.api.result.roa.RoaResult;
 import mx.nic.lab.rpki.api.servlet.RequestMethod;
 import mx.nic.lab.rpki.api.util.Util;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
-import mx.nic.lab.rpki.db.exception.http.BadRequestException;
-import mx.nic.lab.rpki.db.exception.http.HttpException;
 import mx.nic.lab.rpki.db.pojo.Roa;
 import mx.nic.lab.rpki.db.spi.RoaDAO;
 
@@ -36,7 +36,7 @@ public class RoaIdServlet extends RoaServlet {
 		try {
 			id = Long.parseLong(additionalPathInfo.get(0));
 		} catch (NumberFormatException e) {
-			throw new BadRequestException("#{exception.invalidId}", e);
+			throw new BadRequestException("#{error.invalidId}", e);
 		}
 		Roa roa = dao.getById(id);
 		if (roa == null) {

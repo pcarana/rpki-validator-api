@@ -6,13 +6,14 @@ import java.util.List;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 
+import mx.nic.lab.rpki.api.exception.BadRequestException;
+import mx.nic.lab.rpki.api.exception.HttpException;
 import mx.nic.lab.rpki.api.result.ApiResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmBgpsecListResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmBgpsecResult;
 import mx.nic.lab.rpki.api.servlet.RequestMethod;
 import mx.nic.lab.rpki.api.util.Util;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
-import mx.nic.lab.rpki.db.exception.http.BadRequestException;
 import mx.nic.lab.rpki.db.pojo.SlurmBgpsec;
 import mx.nic.lab.rpki.db.spi.SlurmBgpsecDAO;
 
@@ -33,7 +34,7 @@ public class SlurmBgpsecIdServlet extends SlurmBgpsecServlet {
 
 	@Override
 	protected ApiResult doApiDaRequest(RequestMethod requestMethod, HttpServletRequest request, SlurmBgpsecDAO dao)
-			throws ApiDataAccessException {
+			throws HttpException, ApiDataAccessException {
 		if (RequestMethod.GET.equals(requestMethod)) {
 			return handleGet(request, dao);
 		}
@@ -65,9 +66,11 @@ public class SlurmBgpsecIdServlet extends SlurmBgpsecServlet {
 	 * @param request
 	 * @param dao
 	 * @return
+	 * @throws HttpException
 	 * @throws ApiDataAccessException
 	 */
-	private ApiResult handleGet(HttpServletRequest request, SlurmBgpsecDAO dao) throws ApiDataAccessException {
+	private ApiResult handleGet(HttpServletRequest request, SlurmBgpsecDAO dao)
+			throws HttpException, ApiDataAccessException {
 		// The GET request only expects 3 possible paths: {id}, "filter", or "assertion"
 		List<String> additionalPathInfo = Util.getAdditionaPathInfo(request, 1, false);
 		String requestedService = additionalPathInfo.get(0);
@@ -86,7 +89,7 @@ public class SlurmBgpsecIdServlet extends SlurmBgpsecServlet {
 			try {
 				id = Long.parseLong(requestedService);
 			} catch (NumberFormatException e) {
-				throw new BadRequestException("#{exception.invalidId}", e);
+				throw new BadRequestException("#{error.invalidId}", e);
 			}
 			SlurmBgpsec slurmBgpsec = dao.getById(id);
 			if (slurmBgpsec == null) {

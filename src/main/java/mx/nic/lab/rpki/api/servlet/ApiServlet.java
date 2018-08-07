@@ -1,6 +1,9 @@
 package mx.nic.lab.rpki.api.servlet;
 
 import java.io.IOException;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
@@ -14,12 +17,12 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import mx.nic.lab.rpki.api.exception.HttpException;
+import mx.nic.lab.rpki.api.exception.InternalServerErrorException;
 import mx.nic.lab.rpki.api.result.ApiResult;
-import mx.nic.lab.rpki.api.result.ExceptionResult;
+import mx.nic.lab.rpki.api.result.error.ErrorResult;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
-import mx.nic.lab.rpki.db.exception.http.HttpException;
-import mx.nic.lab.rpki.db.exception.http.NotFoundException;
-import mx.nic.lab.rpki.db.pojo.ApiException;
+import mx.nic.lab.rpki.db.exception.ValidationException;
 
 /**
  * Base class of all API servlets, implements all the supported request methods
@@ -37,7 +40,15 @@ public abstract class ApiServlet extends HttpServlet {
 	/**
 	 * Get the complete JSON string, replacing all the labels "#{label}" with its
 	 * corresponding locale value. If there's no bundle available or no property
-	 * defined, an empty String is used to replace the corresponding label.
+	 * defined, an empty String is used to replace the corresponding label.<br>
+	 * <br>
+	 * If the label has parameters concatenated (e.g. #{label}{param1}{param2} see
+	 * more at
+	 * {@link mx.nic.lab.rpki.api.util.Util#concatenateParamsToLabel(String, Object...)})
+	 * then take those values into account to replace any parameters indicated at
+	 * the label. The order of the parameter affects the replacement order, so the
+	 * parameter <code>{0}</code> will be replaced with the first param value, the
+	 * <code>{1}</code> with the second, and so on...
 	 * 
 	 * @param locale
 	 * @param jsonString
@@ -47,16 +58,29 @@ public abstract class ApiServlet extends HttpServlet {
 		if (jsonString == null) {
 			return jsonString;
 		}
-		// Match by groups, the 2nd group determines the key to lookup at the bundles
-		String labelPattern = "(\\#\\{)([\\w\\.\\-]+)(\\})";
-		Matcher m = Pattern.compile(labelPattern).matcher(jsonString);
+		// Match by groups, the 4th group determines the key to lookup at the bundles
+		// and the parameters values (if they are present)
+		String labelPattern = "(\")((\\#\\{)([^\"]+)(\\}))(\")";
+		Matcher labelMatcher = Pattern.compile(labelPattern).matcher(jsonString);
 		ResourceBundle bundle = null;
 		try {
 			bundle = ResourceBundle.getBundle("META-INF/labels/errors", locale);
 			String replacement;
-			while (m.find()) {
-				replacement = bundle.containsKey(m.group(2)) ? bundle.getString(m.group(2)) : "";
-				jsonString = jsonString.replace(m.group(), replacement);
+			while (labelMatcher.find()) {
+				String[] values = labelMatcher.group(4).split("\\}\\{");
+				String key = values[0];
+				replacement = bundle.containsKey(key) ? bundle.getString(key) : "";
+				// Check for parameters and store its value
+				if (values.length > 1) {
+					List<String> parameterValues = new ArrayList<>();
+					for (int i = 1; i < values.length; i++) {
+						parameterValues.add(values[i]);
+					}
+					replacement = MessageFormat.format(replacement,
+							parameterValues.toArray(new Object[parameterValues.size()]));
+				}
+				replacement = "\"" + replacement + "\"";
+				jsonString = jsonString.replace(labelMatcher.group(), replacement);
 			}
 		} catch (MissingResourceException e) {
 			// Fallback: if no bundle was found, try to use the default
@@ -66,8 +90,8 @@ public abstract class ApiServlet extends HttpServlet {
 			// Not even the default was found (that's bad), so this is an internal error,
 			// replace the labels with empty strings and log
 			logger.log(Level.SEVERE, "Error loading bundle, still responding to the request", e);
-			while (m.find()) {
-				jsonString = jsonString.replace(m.group(), "");
+			while (labelMatcher.find()) {
+				jsonString = jsonString.replace(labelMatcher.group(), "\"\"");
 			}
 		}
 		return jsonString;
@@ -85,40 +109,40 @@ public abstract class ApiServlet extends HttpServlet {
 	 */
 	private void handleRequest(RequestMethod requestMethod, HttpServletRequest req, HttpServletResponse resp)
 			throws ServletException, IOException {
-		int responseCode = HttpServletResponse.SC_OK;
 		ApiResult result;
 		try {
 			result = doApiRequest(requestMethod, req);
 		} catch (HttpException e) {
 			// Handled error, the result will be the exception sent
-			responseCode = e.getHttpResponseStatusCode();
-			result = new ExceptionResult(e);
+			result = new ErrorResult(e);
 		} catch (ApiDataAccessException e) {
 			// Some error sent by the implementation, handle properly
-			responseCode = HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
-			result = new ExceptionResult(new HttpException(responseCode, "#{exception.internalError}"));
-			logger.log(Level.SEVERE, e.getMessage(), e);
+			if (e instanceof ValidationException) {
+				result = new ErrorResult((ValidationException) e);
+			} else {
+				result = new ErrorResult(new InternalServerErrorException());
+				logger.log(Level.SEVERE, e.getMessage(), e);
+			}
 		}
 
 		if (result == null) {
-			NotFoundException nfe = new NotFoundException();
-			responseCode = nfe.getHttpResponseStatusCode();
-			result = new ExceptionResult(nfe);
-		} else if (result instanceof ExceptionResult) {
-			// It was an error handled by the ExceptionServlet
-			ExceptionResult er = (ExceptionResult) result;
-			ApiException ce = (ApiException) er.getApiObject();
-			responseCode = ce.getErrorCode();
+			result = new ErrorResult(HttpServletResponse.SC_NOT_FOUND);
+		}
+		// No code was explicitly assigned, assume an OK response
+		if (result.getCode() == 0) {
+			result.setCode(HttpServletResponse.SC_OK);
 		}
 
 		// Render RESULT
-		resp.setStatus(responseCode);
+		resp.setStatus(result.getCode());
 		resp.setCharacterEncoding("UTF-8");
 		resp.setContentType("application/json");
 		resp.setHeader("Access-Control-Allow-Origin", "*");
 
-		String body = getLocaleJson(req.getLocale(), result.toJsonStructure().toString());
-		resp.getWriter().print(body);
+		if (result.toJsonStructure() != null) {
+			String body = getLocaleJson(req.getLocale(), result.toJsonStructure().toString());
+			resp.getWriter().print(body);
+		}
 	}
 
 	@Override

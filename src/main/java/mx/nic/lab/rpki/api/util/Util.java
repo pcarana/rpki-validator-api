@@ -6,9 +6,9 @@ import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 
-import mx.nic.lab.rpki.db.exception.http.BadRequestException;
-import mx.nic.lab.rpki.db.exception.http.HttpException;
-import mx.nic.lab.rpki.db.exception.http.NotFoundException;
+import mx.nic.lab.rpki.api.exception.BadRequestException;
+import mx.nic.lab.rpki.api.exception.HttpException;
+import mx.nic.lab.rpki.api.exception.NotFoundException;
 
 /**
  * Utilery class
@@ -38,7 +38,7 @@ public class Util {
 		String pathInfo = request.getPathInfo();
 		if (pathInfo == null || pathInfo.equals("/")) {
 			if (!allowEmptyPath) {
-				throw new BadRequestException("#{exception.missingArguments}");
+				throw new BadRequestException("#{error.missingArguments}");
 			}
 			return Collections.emptyList();
 		}
@@ -50,5 +50,30 @@ public class Util {
 			throw new NotFoundException(request.getRequestURI());
 		}
 		return requestParams;
+	}
+
+	/**
+	 * Concatenates the parameter values expected at the indicated label, the final
+	 * result is the String: <code>label{param1}{param2}...{paramN}</code><br>
+	 * Later this should be used to replace the parameters with its corresponding
+	 * value.
+	 * 
+	 * @param label
+	 *            a label ID (it must exist in a bundle)
+	 * @param params
+	 *            the parameters to concatenate
+	 * @return The label ID with the parameters concatenated
+	 */
+	public static String concatenateParamsToLabel(String label, Object... params) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(label);
+		if (params.length > 0) {
+			for (Object param : params) {
+				sb.append("{");
+				sb.append(param);
+				sb.append("}");
+			}
+		}
+		return sb.toString();
 	}
 }

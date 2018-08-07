@@ -5,10 +5,10 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import mx.nic.lab.rpki.api.result.ExceptionResult;
+import mx.nic.lab.rpki.api.exception.HttpException;
 import mx.nic.lab.rpki.api.result.ApiResult;
+import mx.nic.lab.rpki.api.result.error.ErrorResult;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
-import mx.nic.lab.rpki.db.exception.http.HttpException;
 
 /**
  * Servlet to catch unhandled exceptions
@@ -31,8 +31,7 @@ public class ExceptionServlet extends ApiServlet {
 			request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, HttpServletResponse.SC_NOT_FOUND);
 			request.setAttribute(RequestDispatcher.ERROR_MESSAGE, request.getRequestURI());
 		}
-		ApiResult result = new ExceptionResult(request);
-		return result;
+		return new ErrorResult(request);
 	}
 
 }

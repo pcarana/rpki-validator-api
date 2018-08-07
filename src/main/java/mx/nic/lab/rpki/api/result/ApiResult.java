@@ -15,6 +15,11 @@ import javax.json.JsonValue;
 public abstract class ApiResult {
 
 	/**
+	 * HTTP response code if a servlet wishes to customize it
+	 */
+	protected int code;
+
+	/**
 	 * Return the JSON of the result
 	 * 
 	 * @return {@link JsonStructure} of the object
@@ -95,5 +100,13 @@ public abstract class ApiResult {
 		if (addNullValue) {
 			builder.addNull(key);
 		}
+	}
+
+	public int getCode() {
+		return code;
+	}
+
+	public void setCode(int code) {
+		this.code = code;
 	}
 }

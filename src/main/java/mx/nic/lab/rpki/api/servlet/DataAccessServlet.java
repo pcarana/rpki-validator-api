@@ -6,12 +6,12 @@ import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 
+import mx.nic.lab.rpki.api.exception.BadRequestException;
+import mx.nic.lab.rpki.api.exception.HttpException;
+import mx.nic.lab.rpki.api.exception.MethodNotAllowedException;
+import mx.nic.lab.rpki.api.exception.NotFoundException;
 import mx.nic.lab.rpki.api.result.ApiResult;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
-import mx.nic.lab.rpki.db.exception.http.BadRequestException;
-import mx.nic.lab.rpki.db.exception.http.HttpException;
-import mx.nic.lab.rpki.db.exception.http.MethodNotAllowedException;
-import mx.nic.lab.rpki.db.exception.http.NotFoundException;
 import mx.nic.lab.rpki.db.spi.DAO;
 
 /**
@@ -49,19 +49,19 @@ public abstract class DataAccessServlet<T extends DAO> extends ApiServlet {
 			throws HttpException, ApiDataAccessException {
 		T dao = initAccessDAO();
 		if (dao == null) {
-			throw new NotFoundException("#{exception.notFound}");
+			throw new NotFoundException();
 		}
 
 		// Validate encoding
 		try {
 			URLDecoder.decode(request.getRequestURI(), "UTF-8");
 		} catch (UnsupportedEncodingException e) {
-			throw new BadRequestException("#{exception.notUtfEncoded}", e);
+			throw new BadRequestException("#{error.notUtfEncoded}", e);
 		}
 
 		// Validate supported methods
 		if (getSupportedRequestMethods() == null || !getSupportedRequestMethods().contains(requestMethod)) {
-			throw new MethodNotAllowedException("#{exception.methodNotAllowed}");
+			throw new MethodNotAllowedException();
 		}
 		return dao;
 	}
