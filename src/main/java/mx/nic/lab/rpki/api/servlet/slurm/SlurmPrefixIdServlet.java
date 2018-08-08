@@ -22,6 +22,7 @@ import mx.nic.lab.rpki.api.exception.InternalServerErrorException;
 import mx.nic.lab.rpki.api.exception.ConflictException;
 import mx.nic.lab.rpki.api.result.ApiResult;
 import mx.nic.lab.rpki.api.result.EmptyResult;
+import mx.nic.lab.rpki.api.result.slurm.SlurmCreateResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmPrefixListResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmPrefixSingleResult;
 import mx.nic.lab.rpki.api.servlet.RequestMethod;
@@ -145,9 +146,11 @@ public class SlurmPrefixIdServlet extends SlurmPrefixServlet {
 		SlurmPrefix newSlurmPrefix = getSlurmPrefixFromBody(request, type);
 		newSlurmPrefix.setType(type);
 		try {
-			SlurmPrefix createdSlurmPrefix = dao.create(newSlurmPrefix);
-			// FIXME Return only the ID to avoid problems
-			SlurmPrefixSingleResult result = new SlurmPrefixSingleResult(createdSlurmPrefix);
+			Long createdSlurmPrefix = dao.create(newSlurmPrefix);
+			if (createdSlurmPrefix == null) {
+				throw new ConflictException("#{error.creationIncomplete}");
+			}
+			SlurmCreateResult result = new SlurmCreateResult(createdSlurmPrefix);
 			result.setCode(HttpServletResponse.SC_CREATED);
 			return result;
 		} catch (ApiDataAccessException e) {

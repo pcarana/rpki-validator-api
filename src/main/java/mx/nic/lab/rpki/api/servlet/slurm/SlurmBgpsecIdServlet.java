@@ -16,11 +16,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import mx.nic.lab.rpki.api.exception.BadRequestException;
+import mx.nic.lab.rpki.api.exception.ConflictException;
 import mx.nic.lab.rpki.api.exception.HttpException;
 import mx.nic.lab.rpki.api.exception.InternalServerErrorException;
 import mx.nic.lab.rpki.api.result.ApiResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmBgpsecListResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmBgpsecSingleResult;
+import mx.nic.lab.rpki.api.result.slurm.SlurmCreateResult;
 import mx.nic.lab.rpki.api.servlet.RequestMethod;
 import mx.nic.lab.rpki.api.util.CMSUtil;
 import mx.nic.lab.rpki.api.util.Util;
@@ -141,9 +143,11 @@ public class SlurmBgpsecIdServlet extends SlurmBgpsecServlet {
 		SlurmBgpsec newSlurmBgpsec = getSlurmBgpsecFromBody(request, type);
 		newSlurmBgpsec.setType(type);
 		try {
-			SlurmBgpsec createdSlurmBgpsec = dao.create(newSlurmBgpsec);
-			// FIXME Return only the ID to avoid problems
-			SlurmBgpsecSingleResult result = new SlurmBgpsecSingleResult(createdSlurmBgpsec);
+			Long createdSlurmBgpsec = dao.create(newSlurmBgpsec);
+			if (createdSlurmBgpsec == null) {
+				throw new ConflictException("#{error.creationIncomplete}");
+			}
+			SlurmCreateResult result = new SlurmCreateResult(createdSlurmBgpsec);
 			result.setCode(HttpServletResponse.SC_CREATED);
 			return result;
 		} catch (ApiDataAccessException e) {
