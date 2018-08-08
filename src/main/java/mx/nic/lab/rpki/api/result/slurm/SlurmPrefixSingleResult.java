@@ -12,9 +12,9 @@ import mx.nic.lab.rpki.db.pojo.SlurmPrefix;
  * Result that represents a single SLURM Prefix
  *
  */
-public class SlurmPrefixResult extends ApiSingleResult<SlurmPrefix> {
+public class SlurmPrefixSingleResult extends ApiSingleResult<SlurmPrefix> {
 
-	public SlurmPrefixResult(SlurmPrefix slurmPrefix) {
+	public SlurmPrefixSingleResult(SlurmPrefix slurmPrefix) {
 		super();
 		setApiObject(slurmPrefix);
 	}

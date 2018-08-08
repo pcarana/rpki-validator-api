@@ -16,9 +16,9 @@ import mx.nic.lab.rpki.db.pojo.TalUri;
  * Result that represents a single Tal
  *
  */
-public class TalResult extends ApiSingleResult<Tal> {
+public class TalSingleResult extends ApiSingleResult<Tal> {
 
-	public TalResult(Tal tal) {
+	public TalSingleResult(Tal tal) {
 		super();
 		setApiObject(tal);
 	}

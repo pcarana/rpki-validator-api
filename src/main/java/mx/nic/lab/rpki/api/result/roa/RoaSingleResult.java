@@ -15,9 +15,9 @@ import mx.nic.lab.rpki.db.pojo.Roa;
  * Result that represents a single Roa
  *
  */
-public class RoaResult extends ApiSingleResult<Roa> {
+public class RoaSingleResult extends ApiSingleResult<Roa> {
 
-	public RoaResult(Roa roa) {
+	public RoaSingleResult(Roa roa) {
 		super();
 		setApiObject(roa);
 	}

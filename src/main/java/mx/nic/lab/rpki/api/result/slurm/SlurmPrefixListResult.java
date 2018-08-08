@@ -27,9 +27,9 @@ public class SlurmPrefixListResult extends ApiListResult<SlurmPrefix> {
 			return JsonObject.EMPTY_JSON_ARRAY;
 		}
 		JsonArrayBuilder jsonBuilder = Json.createArrayBuilder();
-		// Use the SlurmPrefixResult implementation
+		// Use the SlurmPrefixSingleResult implementation
 		getApiObjects().forEach(obj -> {
-			SlurmPrefixResult temp = new SlurmPrefixResult(obj);
+			SlurmPrefixSingleResult temp = new SlurmPrefixSingleResult(obj);
 			jsonBuilder.add(temp.toJsonStructure());
 		});
 		return jsonBuilder.build();

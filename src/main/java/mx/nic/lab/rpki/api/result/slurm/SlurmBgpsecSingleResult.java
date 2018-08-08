@@ -12,9 +12,9 @@ import mx.nic.lab.rpki.db.pojo.SlurmBgpsec;
  * Result that represents a single SLURM BGPsec
  *
  */
-public class SlurmBgpsecResult extends ApiSingleResult<SlurmBgpsec> {
+public class SlurmBgpsecSingleResult extends ApiSingleResult<SlurmBgpsec> {
 
-	public SlurmBgpsecResult(SlurmBgpsec slurmBgpsec) {
+	public SlurmBgpsecSingleResult(SlurmBgpsec slurmBgpsec) {
 		super();
 		setApiObject(slurmBgpsec);
 	}

@@ -20,7 +20,7 @@ import mx.nic.lab.rpki.api.exception.HttpException;
 import mx.nic.lab.rpki.api.exception.InternalServerErrorException;
 import mx.nic.lab.rpki.api.result.ApiResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmBgpsecListResult;
-import mx.nic.lab.rpki.api.result.slurm.SlurmBgpsecResult;
+import mx.nic.lab.rpki.api.result.slurm.SlurmBgpsecSingleResult;
 import mx.nic.lab.rpki.api.servlet.RequestMethod;
 import mx.nic.lab.rpki.api.util.CMSUtil;
 import mx.nic.lab.rpki.api.util.Util;
@@ -107,7 +107,7 @@ public class SlurmBgpsecIdServlet extends SlurmBgpsecServlet {
 			if (slurmBgpsec == null) {
 				return null;
 			}
-			result = new SlurmBgpsecResult(slurmBgpsec);
+			result = new SlurmBgpsecSingleResult(slurmBgpsec);
 		}
 		return result;
 	}
@@ -142,7 +142,8 @@ public class SlurmBgpsecIdServlet extends SlurmBgpsecServlet {
 		newSlurmBgpsec.setType(type);
 		try {
 			SlurmBgpsec createdSlurmBgpsec = dao.create(newSlurmBgpsec);
-			SlurmBgpsecResult result = new SlurmBgpsecResult(createdSlurmBgpsec);
+			// FIXME Return only the ID to avoid problems
+			SlurmBgpsecSingleResult result = new SlurmBgpsecSingleResult(createdSlurmBgpsec);
 			result.setCode(HttpServletResponse.SC_CREATED);
 			return result;
 		} catch (ApiDataAccessException e) {

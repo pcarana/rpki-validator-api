@@ -27,9 +27,9 @@ public class TalListResult extends ApiListResult<Tal> {
 			return JsonObject.EMPTY_JSON_ARRAY;
 		}
 		JsonArrayBuilder jsonBuilder = Json.createArrayBuilder();
-		// Use the TalResult implementation
+		// Use the TalSingleResult implementation
 		getApiObjects().forEach(obj -> {
-			TalResult temp = new TalResult(obj);
+			TalSingleResult temp = new TalSingleResult(obj);
 			jsonBuilder.add(temp.toJsonStructure());
 		});
 		return jsonBuilder.build();

@@ -9,7 +9,7 @@ import javax.servlet.http.HttpServletRequest;
 import mx.nic.lab.rpki.api.exception.BadRequestException;
 import mx.nic.lab.rpki.api.exception.HttpException;
 import mx.nic.lab.rpki.api.result.ApiResult;
-import mx.nic.lab.rpki.api.result.roa.RoaResult;
+import mx.nic.lab.rpki.api.result.roa.RoaSingleResult;
 import mx.nic.lab.rpki.api.servlet.RequestMethod;
 import mx.nic.lab.rpki.api.util.Util;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
@@ -42,7 +42,7 @@ public class RoaIdServlet extends RoaServlet {
 		if (roa == null) {
 			return null;
 		}
-		return new RoaResult(roa);
+		return new RoaSingleResult(roa);
 	}
 
 	@Override

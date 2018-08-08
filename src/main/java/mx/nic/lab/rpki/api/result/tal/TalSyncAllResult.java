@@ -27,7 +27,7 @@ public class TalSyncAllResult extends ApiListResult<Tal> {
 			return JsonObject.EMPTY_JSON_ARRAY;
 		}
 		JsonArrayBuilder jsonBuilder = Json.createArrayBuilder();
-		// Use the TalResult implementation
+		// Use the TalSyncOneResult implementation
 		getApiObjects().forEach(obj -> {
 			TalSyncOneResult temp = new TalSyncOneResult(obj);
 			jsonBuilder.add(temp.toJsonStructure());

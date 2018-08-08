@@ -27,9 +27,9 @@ public class SlurmBgpsecListResult extends ApiListResult<SlurmBgpsec> {
 			return JsonObject.EMPTY_JSON_ARRAY;
 		}
 		JsonArrayBuilder jsonBuilder = Json.createArrayBuilder();
-		// Use the SlurmBgpsecResult implementation
+		// Use the SlurmBgpsecSingleResult implementation
 		getApiObjects().forEach(obj -> {
-			SlurmBgpsecResult temp = new SlurmBgpsecResult(obj);
+			SlurmBgpsecSingleResult temp = new SlurmBgpsecSingleResult(obj);
 			jsonBuilder.add(temp.toJsonStructure());
 		});
 		return jsonBuilder.build();

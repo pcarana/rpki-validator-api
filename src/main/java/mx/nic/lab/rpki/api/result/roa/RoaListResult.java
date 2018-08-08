@@ -27,9 +27,9 @@ public class RoaListResult extends ApiListResult<Roa> {
 			return JsonObject.EMPTY_JSON_ARRAY;
 		}
 		JsonArrayBuilder jsonBuilder = Json.createArrayBuilder();
-		// Use the RoaResult implementation
+		// Use the RoaSingleResult implementation
 		getApiObjects().forEach(obj -> {
-			RoaResult temp = new RoaResult(obj);
+			RoaSingleResult temp = new RoaSingleResult(obj);
 			jsonBuilder.add(temp.toJsonStructure());
 		});
 		return jsonBuilder.build();

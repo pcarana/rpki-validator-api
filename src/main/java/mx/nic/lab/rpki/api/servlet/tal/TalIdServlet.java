@@ -9,7 +9,7 @@ import javax.servlet.http.HttpServletRequest;
 import mx.nic.lab.rpki.api.exception.BadRequestException;
 import mx.nic.lab.rpki.api.exception.HttpException;
 import mx.nic.lab.rpki.api.result.ApiResult;
-import mx.nic.lab.rpki.api.result.tal.TalResult;
+import mx.nic.lab.rpki.api.result.tal.TalSingleResult;
 import mx.nic.lab.rpki.api.servlet.RequestMethod;
 import mx.nic.lab.rpki.api.util.Util;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
@@ -42,7 +42,7 @@ public class TalIdServlet extends TalServlet {
 		if (tal == null) {
 			return null;
 		}
-		return new TalResult(tal);
+		return new TalSingleResult(tal);
 	}
 
 	@Override
