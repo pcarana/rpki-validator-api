@@ -47,9 +47,9 @@ public class SlurmResult extends ApiSingleResult<Slurm> {
 		});
 		slurm.getBgpsecs().forEach(bgpsec -> {
 			if (bgpsec.getType() == SlurmBgpsec.TYPE_FILTER) {
-				prefixFilters.add(getFormattedBgpsec(bgpsec));
+				bgpsecFilters.add(getFormattedBgpsec(bgpsec));
 			} else if (bgpsec.getType() == SlurmBgpsec.TYPE_ASSERTION) {
-				prefixAssertions.add(getFormattedBgpsec(bgpsec));
+				bgpsecAssertions.add(getFormattedBgpsec(bgpsec));
 
 			}
 		});
