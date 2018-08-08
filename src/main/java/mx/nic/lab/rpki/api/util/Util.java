@@ -1,7 +1,9 @@
 package mx.nic.lab.rpki.api.util;
 
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
@@ -15,6 +17,11 @@ import mx.nic.lab.rpki.api.exception.NotFoundException;
  *
  */
 public class Util {
+
+	/**
+	 * Common format to return dates as String
+	 */
+	public static final String DATE_FORMAT = "yyyy-MM-dd'T'HHmmss.SSS'Z'";
 
 	/**
 	 * Return the additional path info of a request URI as a String List, i.e. If
@@ -75,5 +82,16 @@ public class Util {
 			}
 		}
 		return sb.toString();
+	}
+
+	/**
+	 * Get the date as a formatted String
+	 * 
+	 * @param date
+	 * @return
+	 */
+	public static String getFormattedDate(Date date) {
+		SimpleDateFormat df = new SimpleDateFormat(DATE_FORMAT);
+		return df.format(date);
 	}
 }

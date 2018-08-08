@@ -4,8 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -76,8 +74,6 @@ public class CMSUtil {
 	}
 
 	private static final Logger logger = Logger.getLogger(CMSUtil.class.getName());
-
-	private static final String DATE_FORMAT = "yyyy-MM-dd'T'HHmmss.SSS'Z'";
 
 	/**
 	 * Return the CMS data as a {@link JsonObject} (originally received as a byte
@@ -202,10 +198,10 @@ public class CMSUtil {
 				try {
 					if (firstAttrValue instanceof ASN1UTCTime) {
 						ASN1UTCTime utcTime = ASN1UTCTime.getInstance(firstAttrValue);
-						attributeValue = getFormattedDate(utcTime.getAdjustedDate());
+						attributeValue = Util.getFormattedDate(utcTime.getAdjustedDate());
 					} else if (firstAttrValue instanceof ASN1GeneralizedTime) {
 						ASN1GeneralizedTime genTime = ASN1GeneralizedTime.getInstance(firstAttrValue);
-						attributeValue = getFormattedDate(genTime.getDate());
+						attributeValue = Util.getFormattedDate(genTime.getDate());
 					}
 				} catch (ParseException e) {
 					// If the date wasn's set, then keep the value of toString
@@ -291,8 +287,8 @@ public class CMSUtil {
 		tbsCertificateBuilder.add("issuer", tbsCertificate.getIssuer().toString());
 
 		JsonObjectBuilder validityBuilder = Json.createObjectBuilder();
-		validityBuilder.add("notBefore", getFormattedDate(tbsCertificate.getStartDate().getDate()));
-		validityBuilder.add("notAfter", getFormattedDate(tbsCertificate.getEndDate().getDate()));
+		validityBuilder.add("notBefore", Util.getFormattedDate(tbsCertificate.getStartDate().getDate()));
+		validityBuilder.add("notAfter", Util.getFormattedDate(tbsCertificate.getEndDate().getDate()));
 		tbsCertificateBuilder.add("validity", validityBuilder);
 		tbsCertificateBuilder.add("subject", tbsCertificate.getSubject().toString());
 
@@ -759,16 +755,5 @@ public class CMSUtil {
 			return false;
 		}
 		return true;
-	}
-
-	/**
-	 * Get the date as a formatted String
-	 * 
-	 * @param date
-	 * @return
-	 */
-	private static String getFormattedDate(Date date) {
-		SimpleDateFormat df = new SimpleDateFormat(DATE_FORMAT);
-		return df.format(date);
 	}
 }
