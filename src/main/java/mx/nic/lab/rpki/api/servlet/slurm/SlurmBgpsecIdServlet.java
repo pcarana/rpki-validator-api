@@ -20,6 +20,7 @@ import mx.nic.lab.rpki.api.exception.ConflictException;
 import mx.nic.lab.rpki.api.exception.HttpException;
 import mx.nic.lab.rpki.api.exception.InternalServerErrorException;
 import mx.nic.lab.rpki.api.result.ApiResult;
+import mx.nic.lab.rpki.api.result.EmptyResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmBgpsecListResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmBgpsecSingleResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmCreateResult;
@@ -181,9 +182,20 @@ public class SlurmBgpsecIdServlet extends SlurmBgpsecServlet {
 	 * @return
 	 * @throws ApiDataAccessException
 	 */
-	private ApiResult handleDelete(HttpServletRequest request, SlurmBgpsecDAO dao) throws ApiDataAccessException {
-		// FIXME Complete behavior
-		return null;
+	private ApiResult handleDelete(HttpServletRequest request, SlurmBgpsecDAO dao)
+			throws HttpException, ApiDataAccessException {
+		List<String> additionalPathInfo = Util.getAdditionaPathInfo(request, 1, false);
+		// First check that the object exists
+		Long id = null;
+		try {
+			id = Long.parseLong(additionalPathInfo.get(0));
+		} catch (NumberFormatException e) {
+			throw new BadRequestException("#{error.invalidId}", e);
+		}
+		if (!dao.deleteById(id)) {
+			throw new ConflictException();
+		}
+		return new EmptyResult();
 	}
 
 	/**
