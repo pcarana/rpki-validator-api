@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import javax.json.Json;
+import javax.json.JsonException;
 import javax.json.JsonNumber;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
@@ -221,6 +222,8 @@ public class SlurmPrefixIdServlet extends SlurmPrefixServlet {
 			object = reader.readObject();
 		} catch (IOException e) {
 			throw new InternalServerErrorException(e);
+		} catch (JsonException | IllegalStateException e) {
+			throw new BadRequestException("#{error.invalidJson}");
 		}
 		// Check for extra keys (invalid keys)
 		List<String> invalidKeys = new ArrayList<>();
