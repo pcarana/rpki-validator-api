@@ -49,7 +49,7 @@ public class RoaSingleResult extends ApiSingleResult<Roa> {
 	 */
 	protected void buildRoaGbrs(JsonObjectBuilder builder, Roa roa) {
 		if (roa.getGbrs() == null || roa.getGbrs().isEmpty()) {
-			builder.add("gbr", JsonObject.EMPTY_JSON_ARRAY);
+			builder.add("gbrs", JsonObject.EMPTY_JSON_ARRAY);
 			return;
 		}
 		JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
@@ -61,7 +61,7 @@ public class RoaSingleResult extends ApiSingleResult<Roa> {
 					true);
 			arrayBuilder.add(objBuilder);
 		}
-		builder.add("gbr", arrayBuilder);
+		builder.add("gbrs", arrayBuilder);
 	}
 
 }

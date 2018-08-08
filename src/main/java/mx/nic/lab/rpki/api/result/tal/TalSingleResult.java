@@ -50,19 +50,18 @@ public class TalSingleResult extends ApiSingleResult<Tal> {
 	 */
 	protected void buildTalUris(JsonObjectBuilder builder, Tal tal) {
 		if (tal.getTalUris() == null || tal.getTalUris().isEmpty()) {
-			builder.add("uri", JsonObject.EMPTY_JSON_ARRAY);
+			builder.add("uris", JsonObject.EMPTY_JSON_ARRAY);
 			return;
 		}
 		JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
 		for (TalUri talUri : tal.getTalUris()) {
 			JsonObjectBuilder objBuilder = Json.createObjectBuilder();
-			addKeyValueToBuilder(objBuilder, "id", talUri.getId(), true);
 			addKeyValueToBuilder(objBuilder, "value", talUri.getValue(), true);
 			addKeyValueToBuilder(objBuilder, "loadedCer", CMSUtil.getCertAsJson(talUri.getLoadedCer()), true);
 			addKeyValueToBuilder(objBuilder, "loaded", talUri.getLoaded(), true);
 			arrayBuilder.add(objBuilder);
 		}
-		builder.add("uri", arrayBuilder);
+		builder.add("uris", arrayBuilder);
 	}
 
 	/**
@@ -80,7 +79,6 @@ public class TalSingleResult extends ApiSingleResult<Tal> {
 		JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
 		for (TalFile talFile : tal.getTalFiles()) {
 			JsonObjectBuilder objBuilder = Json.createObjectBuilder();
-			addKeyValueToBuilder(objBuilder, "id", talFile.getId(), true);
 			addKeyValueToBuilder(objBuilder, "fileType", talFile.getFileType(), true);
 			addKeyValueToBuilder(objBuilder, "status", talFile.getStatus().toString(), true);
 			addKeyValueToBuilder(objBuilder, "message", talFile.getMessage(), true);
