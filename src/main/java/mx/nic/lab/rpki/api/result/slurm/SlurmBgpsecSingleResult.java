@@ -1,7 +1,6 @@
 package mx.nic.lab.rpki.api.result.slurm;
 
 import javax.json.Json;
-import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonStructure;
 
@@ -23,7 +22,7 @@ public class SlurmBgpsecSingleResult extends ApiSingleResult<SlurmBgpsec> {
 	public JsonStructure toJsonStructure() {
 		SlurmBgpsec slurmBgpsec = getApiObject();
 		if (slurmBgpsec == null) {
-			return JsonObject.EMPTY_JSON_OBJECT;
+			return null;
 		}
 		JsonObjectBuilder builder = Json.createObjectBuilder();
 		addKeyValueToBuilder(builder, "id", slurmBgpsec.getId(), true);

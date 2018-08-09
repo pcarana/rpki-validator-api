@@ -1,7 +1,6 @@
 package mx.nic.lab.rpki.api.result.tal;
 
 import javax.json.Json;
-import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonStructure;
 
@@ -23,7 +22,7 @@ public class TalSyncOneResult extends ApiSingleResult<Tal> {
 	public JsonStructure toJsonStructure() {
 		Tal tal = getApiObject();
 		if (tal == null) {
-			return JsonObject.EMPTY_JSON_OBJECT;
+			return null;
 		}
 		JsonObjectBuilder builder = Json.createObjectBuilder();
 		addKeyValueToBuilder(builder, "id", tal.getId(), true);

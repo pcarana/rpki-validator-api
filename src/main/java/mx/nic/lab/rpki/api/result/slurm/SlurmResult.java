@@ -26,7 +26,7 @@ public class SlurmResult extends ApiSingleResult<Slurm> {
 	public JsonStructure toJsonStructure() {
 		Slurm slurm = getApiObject();
 		if (slurm == null) {
-			return JsonObject.EMPTY_JSON_OBJECT;
+			return null;
 		}
 		// Response conforming the original SLURM as indicated at
 		// draft-ietf-sidr-slurm-08

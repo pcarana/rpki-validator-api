@@ -26,7 +26,7 @@ public class RoaSingleResult extends ApiSingleResult<Roa> {
 	public JsonStructure toJsonStructure() {
 		Roa roa = getApiObject();
 		if (roa == null) {
-			return JsonObject.EMPTY_JSON_OBJECT;
+			return null;
 		}
 		JsonObjectBuilder builder = Json.createObjectBuilder();
 		addKeyValueToBuilder(builder, "id", roa.getId(), true);

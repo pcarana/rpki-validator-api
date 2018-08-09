@@ -1,7 +1,6 @@
 package mx.nic.lab.rpki.api.result.slurm;
 
 import javax.json.Json;
-import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonStructure;
 
@@ -22,7 +21,7 @@ public class SlurmCreateResult extends ApiSingleResult<Long> {
 	public JsonStructure toJsonStructure() {
 		Long createdId = getApiObject();
 		if (createdId == null) {
-			return JsonObject.EMPTY_JSON_OBJECT;
+			return null;
 		}
 		JsonObjectBuilder builder = Json.createObjectBuilder();
 		addKeyValueToBuilder(builder, "id", createdId, true);

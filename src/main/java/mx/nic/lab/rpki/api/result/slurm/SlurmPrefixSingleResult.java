@@ -1,7 +1,6 @@
 package mx.nic.lab.rpki.api.result.slurm;
 
 import javax.json.Json;
-import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonStructure;
 
@@ -23,7 +22,7 @@ public class SlurmPrefixSingleResult extends ApiSingleResult<SlurmPrefix> {
 	public JsonStructure toJsonStructure() {
 		SlurmPrefix slurmPrefix = getApiObject();
 		if (slurmPrefix == null) {
-			return JsonObject.EMPTY_JSON_OBJECT;
+			return null;
 		}
 		JsonObjectBuilder builder = Json.createObjectBuilder();
 		addKeyValueToBuilder(builder, "id", slurmPrefix.getId(), true);
