@@ -56,6 +56,12 @@ public class Util {
 		if (maxParamsExpected >= 0 && requestParams.size() > maxParamsExpected) {
 			throw new NotFoundException(request.getRequestURI());
 		}
+		// Check empty strings
+		for (String param : requestParams) {
+			if (param.isEmpty()) {
+				throw new BadRequestException("#{error.missingArguments}");
+			}
+		}
 		return requestParams;
 	}
 
