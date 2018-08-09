@@ -220,9 +220,7 @@ public class CMSUtil {
 		}
 		genericObjectBuilder.add("signatureAlgorithm", sigAlgBuilder);
 
-		// The toString method adds a "#", remove it and convert to upper case
-		genericObjectBuilder.add("signature",
-				signerInfo.getEncryptedDigest().toString().replace("#", "").toUpperCase());
+		genericObjectBuilder.add("signature", getBytesAsHexString(signerInfo.getEncryptedDigest().getOctets()));
 
 		genericArrayBuilder.add(genericObjectBuilder);
 		contentBuilder.add("signerInfos", genericArrayBuilder);
@@ -295,17 +293,17 @@ public class CMSUtil {
 		JsonObjectBuilder spkiBuilder = Json.createObjectBuilder();
 		spkiBuilder.add("algorithm", tbsCertificate.getSubjectPublicKeyInfo().getAlgorithm().getAlgorithm().getId());
 		spkiBuilder.add("subjectPublicKey",
-				tbsCertificate.getSubjectPublicKeyInfo().getPublicKeyData().getString().replace("#", ""));
+				getBytesAsHexString(tbsCertificate.getSubjectPublicKeyInfo().getPublicKeyData().getOctets()));
 		tbsCertificateBuilder.add("subjectPublicKeyInfo", spkiBuilder);
 		// OPTIONAL
 		if (tbsCertificate.getIssuerUniqueId() != null) {
 			tbsCertificateBuilder.add("issuerUniqueID",
-					tbsCertificate.getIssuerUniqueId().getString().replace("#", ""));
+					getBytesAsHexString(tbsCertificate.getIssuerUniqueId().getOctets()));
 		}
 		// OPTIONAL
 		if (tbsCertificate.getSubjectUniqueId() != null) {
 			tbsCertificateBuilder.add("subjectUniqueID",
-					tbsCertificate.getSubjectUniqueId().getString().replace("#", ""));
+					getBytesAsHexString(tbsCertificate.getSubjectUniqueId().getOctets()));
 		}
 
 		JsonArrayBuilder extensionsBuilder = Json.createArrayBuilder();
@@ -330,8 +328,7 @@ public class CMSUtil {
 			sigAlgBuilder.add("parameters", certificate.getSignatureAlgorithm().getParameters().toString());
 		}
 		builder.add("signatureAlgorithm", sigAlgBuilder);
-		// The getString method adds a "#", remove it
-		builder.add("signatureValue", certificate.getSignature().getString().replace("#", ""));
+		builder.add("signatureValue", getBytesAsHexString(certificate.getSignature().getOctets()));
 		return builder.build();
 	}
 
@@ -535,7 +532,7 @@ public class CMSUtil {
 
 				// addressFamily
 				ASN1OctetString addressFamily = ASN1OctetString.getInstance(addrBlockFam.getObjectAt(0));
-				addrBlockFamBuilder.add("addressFamily", addressFamily.toString().replace("#", ""));
+				addrBlockFamBuilder.add("addressFamily", getBytesAsHexString(addressFamily.getOctets()));
 
 				// ipAddressChoice
 				JsonObjectBuilder addressChoiceBuilder = Json.createObjectBuilder();
@@ -552,17 +549,17 @@ public class CMSUtil {
 						if (addrOrRangeEnc instanceof ASN1BitString) {
 							// It's an addressPrefix
 							ASN1BitString addressPrefix = DERBitString.getInstance(addrOrRangeEnc);
-							addrOrRangeBuilder.add("addressPrefix", addressPrefix.getString().replace("#", ""));
+							addrOrRangeBuilder.add("addressPrefix", getBytesAsHexString(addressPrefix.getOctets()));
 						} else {
 							// It's an addressRange sequence
 							ASN1Sequence addrRange = ASN1Sequence.getInstance(addrOrRangeEnc);
 							JsonObjectBuilder rangeBuilder = Json.createObjectBuilder();
 							// min
 							ASN1BitString min = DERBitString.getInstance(addrRange.getObjectAt(0));
-							rangeBuilder.add("min", min.getString().replace("#", ""));
+							rangeBuilder.add("min", getBytesAsHexString(min.getOctets()));
 							// max
 							ASN1BitString max = DERBitString.getInstance(addrRange.getObjectAt(1));
-							rangeBuilder.add("max", max.getString().replace("#", ""));
+							rangeBuilder.add("max", getBytesAsHexString(max.getOctets()));
 							addrOrRangeBuilder.add("addressRange", rangeBuilder);
 						}
 						addrOrRangesBuilder.add(addrOrRangeBuilder);
@@ -649,8 +646,7 @@ public class CMSUtil {
 
 				// addressFamily
 				ASN1OctetString addressFamily = ASN1OctetString.getInstance(ipAddrFamSeq.getObjectAt(0));
-				// The toString method adds a "#", remove it
-				ipAddrBlockBuilder.add("addressFamily", addressFamily.toString().replace("#", ""));
+				ipAddrBlockBuilder.add("addressFamily", getBytesAsHexString(addressFamily.getOctets()));
 
 				// addresses (another sequence to iterate)
 				JsonArrayBuilder addresessBuilder = Json.createArrayBuilder();
@@ -662,8 +658,7 @@ public class CMSUtil {
 
 					// address
 					ASN1BitString address = DERBitString.getInstance(ipAddressSeq.getObjectAt(0));
-					// The getString method adds a "#", remove it
-					addressBuilder.add("address", address.getString().replace("#", ""));
+					addressBuilder.add("address", getBytesAsHexString(address.getOctets()));
 
 					// maxLength (Optional)
 					if (ipAddressSeq.size() > 1) {
@@ -715,6 +710,16 @@ public class CMSUtil {
 					"The GBR content couldn't be parsed, returning String representation of the HEX value", e);
 			return Strings.fromByteArray(Hex.encode(octetStringGbr.getOctets()));
 		}
+	}
+
+	/**
+	 * Get the byte array as HEX String representation
+	 * 
+	 * @param bytes
+	 * @return
+	 */
+	private static String getBytesAsHexString(byte[] bytes) {
+		return Strings.fromByteArray(Hex.encode(bytes)).toUpperCase();
 	}
 
 	/**
