@@ -20,7 +20,6 @@ public class ApiConfiguration {
 	private static final String LANGUAGE_KEY = "language";
 
 	// Properties to configure
-	// FIXME probably this won't be used, since the locale is set to the Context
 	private static String serverLanguage;
 
 	private ApiConfiguration() {
