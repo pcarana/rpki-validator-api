@@ -1,7 +1,9 @@
 package mx.nic.lab.rpki.api.servlet.tal;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -9,6 +11,7 @@ import javax.servlet.http.HttpServletRequest;
 import mx.nic.lab.rpki.api.exception.HttpException;
 import mx.nic.lab.rpki.api.result.ApiResult;
 import mx.nic.lab.rpki.api.result.tal.TalListResult;
+import mx.nic.lab.rpki.api.servlet.PagingParameters;
 import mx.nic.lab.rpki.api.servlet.RequestMethod;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.pojo.Tal;
@@ -22,6 +25,19 @@ import mx.nic.lab.rpki.db.spi.TalDAO;
 public class TalListServlet extends TalServlet {
 
 	/**
+	 * Valid sort keys that can be received as query parameters, they're mapped to
+	 * the corresponding POJO properties
+	 */
+	private static final Map<String, String> validSortKeysMap;
+	static {
+		validSortKeysMap = new HashMap<>();
+		validSortKeysMap.put("id", Tal.ID);
+		validSortKeysMap.put("lastSync", Tal.LAST_SYNC);
+		validSortKeysMap.put("status", Tal.STATUS);
+		validSortKeysMap.put("name", Tal.NAME);
+	}
+
+	/**
 	 * Serial version ID
 	 */
 	private static final long serialVersionUID = 1L;
@@ -29,7 +45,8 @@ public class TalListServlet extends TalServlet {
 	@Override
 	protected ApiResult doApiDaRequest(RequestMethod requestMethod, HttpServletRequest request, TalDAO dao)
 			throws HttpException, ApiDataAccessException {
-		List<Tal> tals = dao.getAll();
+		PagingParameters pagingParams = PagingParameters.createFromRequest(request, validSortKeysMap);
+		List<Tal> tals = dao.getAll(pagingParams.getLimit(), pagingParams.getOffset(), pagingParams.getSort());
 		return new TalListResult(tals);
 	}
 

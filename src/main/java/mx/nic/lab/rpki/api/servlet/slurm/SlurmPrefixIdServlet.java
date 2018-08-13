@@ -5,7 +5,9 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.json.Json;
 import javax.json.JsonException;
@@ -25,6 +27,7 @@ import mx.nic.lab.rpki.api.result.EmptyResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmCreateResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmPrefixListResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmPrefixSingleResult;
+import mx.nic.lab.rpki.api.servlet.PagingParameters;
 import mx.nic.lab.rpki.api.servlet.RequestMethod;
 import mx.nic.lab.rpki.api.util.Util;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
@@ -42,6 +45,31 @@ import mx.nic.lab.rpki.db.spi.SlurmPrefixDAO;
  */
 @WebServlet(name = "slurmPrefixId", urlPatterns = { "/slurm/prefix/*" })
 public class SlurmPrefixIdServlet extends SlurmPrefixServlet {
+
+	/**
+	 * Valid sort keys that can be received as query parameters at a filter search,
+	 * they're mapped to the corresponding POJO properties
+	 */
+	private static final Map<String, String> validFilterSortKeysMap;
+	static {
+		validFilterSortKeysMap = new HashMap<>();
+		validFilterSortKeysMap.put("id", SlurmPrefix.ID);
+		validFilterSortKeysMap.put("asn", SlurmPrefix.ASN);
+		validFilterSortKeysMap.put("prefix", SlurmPrefix.START_PREFIX);
+	}
+
+	/**
+	 * Valid sort keys that can be received as query parameters at an assertion
+	 * search, they're mapped to the corresponding POJO properties
+	 */
+	private static final Map<String, String> validAssertionSortKeysMap;
+	static {
+		validAssertionSortKeysMap = new HashMap<>();
+		validAssertionSortKeysMap.put("id", SlurmPrefix.ID);
+		validAssertionSortKeysMap.put("asn", SlurmPrefix.ASN);
+		validAssertionSortKeysMap.put("prefix", SlurmPrefix.START_PREFIX);
+		validAssertionSortKeysMap.put("maxPrefixLength", SlurmPrefix.PREFIX_MAX_LENGTH);
+	}
 
 	/**
 	 * Serial version ID
@@ -94,10 +122,14 @@ public class SlurmPrefixIdServlet extends SlurmPrefixServlet {
 
 		// Check if is a filter/assertion request
 		if (requestedService.equals(FILTER_SERVICE)) {
-			List<SlurmPrefix> filters = dao.getAllByType(SlurmPrefix.TYPE_FILTER);
+			PagingParameters pagingParams = PagingParameters.createFromRequest(request, validFilterSortKeysMap);
+			List<SlurmPrefix> filters = dao.getAllByType(SlurmPrefix.TYPE_FILTER, pagingParams.getLimit(),
+					pagingParams.getOffset(), pagingParams.getSort());
 			result = new SlurmPrefixListResult(filters);
 		} else if (requestedService.equals(ASSERTION_SERVICE)) {
-			List<SlurmPrefix> assertions = dao.getAllByType(SlurmPrefix.TYPE_ASSERTION);
+			PagingParameters pagingParams = PagingParameters.createFromRequest(request, validAssertionSortKeysMap);
+			List<SlurmPrefix> assertions = dao.getAllByType(SlurmPrefix.TYPE_ASSERTION, pagingParams.getLimit(),
+					pagingParams.getOffset(), pagingParams.getSort());
 			result = new SlurmPrefixListResult(assertions);
 		} else {
 			// Check if is an ID

@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.json.Json;
 import javax.json.JsonException;
@@ -24,6 +26,7 @@ import mx.nic.lab.rpki.api.result.EmptyResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmBgpsecListResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmBgpsecSingleResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmCreateResult;
+import mx.nic.lab.rpki.api.servlet.PagingParameters;
 import mx.nic.lab.rpki.api.servlet.RequestMethod;
 import mx.nic.lab.rpki.api.util.CMSUtil;
 import mx.nic.lab.rpki.api.util.Util;
@@ -41,6 +44,28 @@ import mx.nic.lab.rpki.db.spi.SlurmBgpsecDAO;
  */
 @WebServlet(name = "slurmBgpsecId", urlPatterns = { "/slurm/bgpsec/*" })
 public class SlurmBgpsecIdServlet extends SlurmBgpsecServlet {
+
+	/**
+	 * Valid sort keys that can be received as query parameters at a filter search,
+	 * they're mapped to the corresponding POJO properties
+	 */
+	private static final Map<String, String> validFilterSortKeysMap;
+	static {
+		validFilterSortKeysMap = new HashMap<>();
+		validFilterSortKeysMap.put("id", SlurmBgpsec.ID);
+		validFilterSortKeysMap.put("asn", SlurmBgpsec.ASN);
+	}
+
+	/**
+	 * Valid sort keys that can be received as query parameters at an assertion
+	 * search, they're mapped to the corresponding POJO properties
+	 */
+	private static final Map<String, String> validAssertionSortKeysMap;
+	static {
+		validAssertionSortKeysMap = new HashMap<>();
+		validAssertionSortKeysMap.put("id", SlurmBgpsec.ID);
+		validAssertionSortKeysMap.put("asn", SlurmBgpsec.ASN);
+	}
 
 	/**
 	 * Serial version ID
@@ -93,10 +118,14 @@ public class SlurmBgpsecIdServlet extends SlurmBgpsecServlet {
 
 		// Check if is a filter/assertion request
 		if (requestedService.equals(FILTER_SERVICE)) {
-			List<SlurmBgpsec> filters = dao.getAllByType(SlurmBgpsec.TYPE_FILTER);
+			PagingParameters pagingParams = PagingParameters.createFromRequest(request, validFilterSortKeysMap);
+			List<SlurmBgpsec> filters = dao.getAllByType(SlurmBgpsec.TYPE_FILTER, pagingParams.getLimit(),
+					pagingParams.getOffset(), pagingParams.getSort());
 			result = new SlurmBgpsecListResult(filters);
 		} else if (requestedService.equals(ASSERTION_SERVICE)) {
-			List<SlurmBgpsec> assertions = dao.getAllByType(SlurmBgpsec.TYPE_ASSERTION);
+			PagingParameters pagingParams = PagingParameters.createFromRequest(request, validAssertionSortKeysMap);
+			List<SlurmBgpsec> assertions = dao.getAllByType(SlurmBgpsec.TYPE_ASSERTION, pagingParams.getLimit(),
+					pagingParams.getOffset(), pagingParams.getSort());
 			result = new SlurmBgpsecListResult(assertions);
 		} else {
 			// Check if is an ID
