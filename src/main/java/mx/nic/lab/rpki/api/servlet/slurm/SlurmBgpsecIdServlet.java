@@ -26,12 +26,12 @@ import mx.nic.lab.rpki.api.result.EmptyResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmBgpsecListResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmBgpsecSingleResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmCreateResult;
-import mx.nic.lab.rpki.api.servlet.PagingParameters;
 import mx.nic.lab.rpki.api.servlet.RequestMethod;
 import mx.nic.lab.rpki.api.util.CMSUtil;
 import mx.nic.lab.rpki.api.util.Util;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.exception.ValidationException;
+import mx.nic.lab.rpki.db.pojo.PagingParameters;
 import mx.nic.lab.rpki.db.pojo.SlurmBgpsec;
 import mx.nic.lab.rpki.db.spi.SlurmBgpsecDAO;
 
@@ -118,14 +118,12 @@ public class SlurmBgpsecIdServlet extends SlurmBgpsecServlet {
 
 		// Check if is a filter/assertion request
 		if (requestedService.equals(FILTER_SERVICE)) {
-			PagingParameters pagingParams = PagingParameters.createFromRequest(request, validFilterSortKeysMap);
-			List<SlurmBgpsec> filters = dao.getAllByType(SlurmBgpsec.TYPE_FILTER, pagingParams.getLimit(),
-					pagingParams.getOffset(), pagingParams.getSort());
+			PagingParameters pagingParams = Util.createFromRequest(request, validFilterSortKeysMap);
+			List<SlurmBgpsec> filters = dao.getAllByType(SlurmBgpsec.TYPE_FILTER, pagingParams);
 			result = new SlurmBgpsecListResult(filters);
 		} else if (requestedService.equals(ASSERTION_SERVICE)) {
-			PagingParameters pagingParams = PagingParameters.createFromRequest(request, validAssertionSortKeysMap);
-			List<SlurmBgpsec> assertions = dao.getAllByType(SlurmBgpsec.TYPE_ASSERTION, pagingParams.getLimit(),
-					pagingParams.getOffset(), pagingParams.getSort());
+			PagingParameters pagingParams = Util.createFromRequest(request, validAssertionSortKeysMap);
+			List<SlurmBgpsec> assertions = dao.getAllByType(SlurmBgpsec.TYPE_ASSERTION, pagingParams);
 			result = new SlurmBgpsecListResult(assertions);
 		} else {
 			// Check if is an ID
@@ -316,7 +314,8 @@ public class SlurmBgpsecIdServlet extends SlurmBgpsecServlet {
 					Util.concatenateParamsToLabel("#{error.invalid.dataType}", "comment", "String"));
 		}
 
-		// Check SKI and routerPublicKey are sent base64url encoded, and verify its value
+		// Check SKI and routerPublicKey are sent base64url encoded, and verify its
+		// value
 		if (slurmBgpsec.getSki() != null && !slurmBgpsec.getSki().trim().isEmpty()) {
 			try {
 				byte[] decodedSki = Base64.getUrlDecoder().decode(slurmBgpsec.getSki());

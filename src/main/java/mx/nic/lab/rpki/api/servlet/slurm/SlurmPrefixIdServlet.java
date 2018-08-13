@@ -27,12 +27,12 @@ import mx.nic.lab.rpki.api.result.EmptyResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmCreateResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmPrefixListResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmPrefixSingleResult;
-import mx.nic.lab.rpki.api.servlet.PagingParameters;
 import mx.nic.lab.rpki.api.servlet.RequestMethod;
 import mx.nic.lab.rpki.api.util.Util;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.exception.ValidationError;
 import mx.nic.lab.rpki.db.exception.ValidationException;
+import mx.nic.lab.rpki.db.pojo.PagingParameters;
 import mx.nic.lab.rpki.db.pojo.SlurmPrefix;
 import mx.nic.lab.rpki.db.spi.SlurmPrefixDAO;
 
@@ -122,14 +122,12 @@ public class SlurmPrefixIdServlet extends SlurmPrefixServlet {
 
 		// Check if is a filter/assertion request
 		if (requestedService.equals(FILTER_SERVICE)) {
-			PagingParameters pagingParams = PagingParameters.createFromRequest(request, validFilterSortKeysMap);
-			List<SlurmPrefix> filters = dao.getAllByType(SlurmPrefix.TYPE_FILTER, pagingParams.getLimit(),
-					pagingParams.getOffset(), pagingParams.getSort());
+			PagingParameters pagingParams = Util.createFromRequest(request, validFilterSortKeysMap);
+			List<SlurmPrefix> filters = dao.getAllByType(SlurmPrefix.TYPE_FILTER, pagingParams);
 			result = new SlurmPrefixListResult(filters);
 		} else if (requestedService.equals(ASSERTION_SERVICE)) {
-			PagingParameters pagingParams = PagingParameters.createFromRequest(request, validAssertionSortKeysMap);
-			List<SlurmPrefix> assertions = dao.getAllByType(SlurmPrefix.TYPE_ASSERTION, pagingParams.getLimit(),
-					pagingParams.getOffset(), pagingParams.getSort());
+			PagingParameters pagingParams = Util.createFromRequest(request, validAssertionSortKeysMap);
+			List<SlurmPrefix> assertions = dao.getAllByType(SlurmPrefix.TYPE_ASSERTION, pagingParams);
 			result = new SlurmPrefixListResult(assertions);
 		} else {
 			// Check if is an ID
