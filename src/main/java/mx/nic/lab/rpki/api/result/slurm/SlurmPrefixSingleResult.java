@@ -28,7 +28,7 @@ public class SlurmPrefixSingleResult extends ApiSingleResult<SlurmPrefix> {
 		addKeyValueToBuilder(builder, "id", slurmPrefix.getId(), true);
 		addKeyValueToBuilder(builder, "asn", slurmPrefix.getAsn(), true);
 		addKeyValueToBuilder(builder, "prefix", formatPrefix(slurmPrefix), true);
-		addKeyValueToBuilder(builder, "maxPrefixLength", slurmPrefix.getPrefixMaxLength(), true);
+		addKeyValueToBuilder(builder, "maxPrefixLength", slurmPrefix.getPrefixMaxLength(), false);
 		addKeyValueToBuilder(builder, "type", slurmPrefix.getType() == SlurmPrefix.TYPE_FILTER ? "filter" : "assertion",
 				true);
 		addKeyValueToBuilder(builder, "comment", slurmPrefix.getComment(), true);
