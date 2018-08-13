@@ -13,7 +13,6 @@ import javax.servlet.http.HttpServletRequest;
 import mx.nic.lab.rpki.api.exception.BadRequestException;
 import mx.nic.lab.rpki.api.exception.HttpException;
 import mx.nic.lab.rpki.api.exception.NotFoundException;
-import mx.nic.lab.rpki.db.pojo.ApiObject;
 import mx.nic.lab.rpki.db.pojo.PagingParameters;
 
 /**
@@ -192,7 +191,7 @@ public class Util {
 					throw new BadRequestException("#{error.paging.emptySort}");
 				}
 				char sign = col.charAt(0);
-				String ordering = sign == '-' ? ApiObject.ORDER_DESC : ApiObject.ORDER_ASC;
+				String ordering = sign == '-' ? PagingParameters.ORDER_DESC : PagingParameters.ORDER_ASC;
 				String key = sign == '-' || sign == '+' ? col.substring(1) : col;
 				// Validate the sort keys with the expected
 				if (!validSortKeysMap.containsKey(key)) {
