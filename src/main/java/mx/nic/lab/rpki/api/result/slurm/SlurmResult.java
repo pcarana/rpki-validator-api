@@ -28,8 +28,7 @@ public class SlurmResult extends ApiSingleResult<Slurm> {
 		if (slurm == null) {
 			return null;
 		}
-		// Response conforming the original SLURM as indicated at
-		// draft-ietf-sidr-slurm-08
+		// Response conforming the original SLURM as indicated at RFC 8416
 		JsonObjectBuilder slurmBuilder = Json.createObjectBuilder();
 		JsonObjectBuilder validationOutputFilters = Json.createObjectBuilder();
 		JsonObjectBuilder locallyAddedAssertions = Json.createObjectBuilder();
@@ -83,7 +82,7 @@ public class SlurmResult extends ApiSingleResult<Slurm> {
 		JsonObjectBuilder builder = Json.createObjectBuilder();
 		addKeyValueToBuilder(builder, "asn", bgpsec.getAsn(), false);
 		addKeyValueToBuilder(builder, "SKI", bgpsec.getSki(), false);
-		addKeyValueToBuilder(builder, "publicKey", bgpsec.getPublicKey(), false);
+		addKeyValueToBuilder(builder, "routerPublicKey", bgpsec.getRouterPublicKey(), false);
 		addKeyValueToBuilder(builder, "comment", bgpsec.getComment(), false);
 		return builder.build();
 	}

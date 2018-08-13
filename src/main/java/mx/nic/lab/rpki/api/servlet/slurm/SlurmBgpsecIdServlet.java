@@ -248,7 +248,7 @@ public class SlurmBgpsecIdServlet extends SlurmBgpsecServlet {
 		// Check for extra keys (invalid keys)
 		List<String> invalidKeys = new ArrayList<>();
 		for (String key : object.keySet()) {
-			if (!key.matches("(asn|SKI|publicKey|comment)")) {
+			if (!key.matches("(asn|SKI|routerPublicKey|comment)")) {
 				invalidKeys.add(key);
 			}
 		}
@@ -288,18 +288,18 @@ public class SlurmBgpsecIdServlet extends SlurmBgpsecServlet {
 		}
 
 		try {
-			String value = object.getString("publicKey");
+			String value = object.getString("routerPublicKey");
 			if (value.trim().isEmpty()) {
-				throw new BadRequestException("#{error.slurm.bgpsec.publicKeyEmpty}");
+				throw new BadRequestException("#{error.slurm.bgpsec.routerPublicKeyEmpty}");
 			}
-			slurmBgpsec.setPublicKey(value.trim());
+			slurmBgpsec.setRouterPublicKey(value.trim());
 		} catch (NullPointerException npe) {
 			if (type == SlurmBgpsec.TYPE_ASSERTION) {
-				throw new BadRequestException("#{error.slurm.bgpsec.publicKeyRequired}");
+				throw new BadRequestException("#{error.slurm.bgpsec.routerPublicKeyRequired}");
 			}
 		} catch (ClassCastException cce) {
 			throw new BadRequestException(
-					Util.concatenateParamsToLabel("#{error.invalid.dataType}", "publicKey", "String"));
+					Util.concatenateParamsToLabel("#{error.invalid.dataType}", "routerPublicKey", "String"));
 		}
 
 		try {
@@ -316,7 +316,7 @@ public class SlurmBgpsecIdServlet extends SlurmBgpsecServlet {
 					Util.concatenateParamsToLabel("#{error.invalid.dataType}", "comment", "String"));
 		}
 
-		// Check SKI and publicKey are sent base64url encoded, and verify its value
+		// Check SKI and routerPublicKey are sent base64url encoded, and verify its value
 		if (slurmBgpsec.getSki() != null && !slurmBgpsec.getSki().trim().isEmpty()) {
 			try {
 				byte[] decodedSki = Base64.getUrlDecoder().decode(slurmBgpsec.getSki());
@@ -328,15 +328,15 @@ public class SlurmBgpsecIdServlet extends SlurmBgpsecServlet {
 			}
 		}
 
-		if (slurmBgpsec.getPublicKey() != null && !slurmBgpsec.getPublicKey().trim().isEmpty()) {
+		if (slurmBgpsec.getRouterPublicKey() != null && !slurmBgpsec.getRouterPublicKey().trim().isEmpty()) {
 			try {
-				byte[] decodedPk = Base64.getUrlDecoder().decode(slurmBgpsec.getPublicKey());
+				byte[] decodedPk = Base64.getUrlDecoder().decode(slurmBgpsec.getRouterPublicKey());
 				if (!CMSUtil.isValidSubjectPublicKey(decodedPk)) {
-					throw new BadRequestException("#{error.slurm.bgpsec.publicKeyInvalid}");
+					throw new BadRequestException("#{error.slurm.bgpsec.routerPublicKeyInvalid}");
 				}
 			} catch (IllegalArgumentException e) {
 				throw new BadRequestException(
-						Util.concatenateParamsToLabel("#{error.slurm.bgpsec.notBase64}", "publicKey"));
+						Util.concatenateParamsToLabel("#{error.slurm.bgpsec.notBase64}", "routerPublicKey"));
 			}
 		}
 		return slurmBgpsec;
