@@ -48,13 +48,17 @@ public abstract class ApiServlet extends HttpServlet {
 	 * then take those values into account to replace any parameters indicated at
 	 * the label. The order of the parameter affects the replacement order, so the
 	 * parameter <code>{0}</code> will be replaced with the first param value, the
-	 * <code>{1}</code> with the second, and so on...
+	 * <code>{1}</code> with the second, and so on... <br>
+	 * <br>
+	 * Finally, the <code>response</code> is modified adding the 'Content-Language'
+	 * header to indicate which language was used.
 	 * 
 	 * @param locale
 	 * @param jsonString
+	 * @param response
 	 * @return JSON string with labels replaced
 	 */
-	private String getLocaleJson(Locale locale, String jsonString) {
+	private String getLocaleJson(Locale locale, String jsonString, HttpServletResponse response) {
 		if (jsonString == null) {
 			return jsonString;
 		}
@@ -82,10 +86,11 @@ public abstract class ApiServlet extends HttpServlet {
 				replacement = "\"" + replacement + "\"";
 				jsonString = jsonString.replace(labelMatcher.group(), replacement);
 			}
+			response.setHeader("Content-Language", locale.toLanguageTag());
 		} catch (MissingResourceException e) {
 			// Fallback: if no bundle was found, try to use the default
 			if (!locale.equals(Locale.getDefault())) {
-				return getLocaleJson(Locale.getDefault(), jsonString);
+				return getLocaleJson(Locale.getDefault(), jsonString, response);
 			}
 			// Not even the default was found (that's bad), so this is an internal error,
 			// replace the labels with empty strings and log
@@ -140,7 +145,7 @@ public abstract class ApiServlet extends HttpServlet {
 		resp.setHeader("Access-Control-Allow-Origin", "*");
 
 		if (result.toJsonStructure() != null) {
-			String body = getLocaleJson(req.getLocale(), result.toJsonStructure().toString());
+			String body = getLocaleJson(req.getLocale(), result.toJsonStructure().toString(), resp);
 			resp.getWriter().print(body);
 		}
 	}
