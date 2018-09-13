@@ -109,8 +109,6 @@ public class RpkiRepositoryValidationService {
 		Set<Tal> affectedTrustAnchors = new HashSet<>();
 
 		final ValidationRun validationRun = new ValidationRun(ValidationRun.Type.RPKI_REPOSITORY);
-		// Persist at the end
-		// validationRunRepository.create(validationRun);
 
 		final Map<String, RpkiObject> objectsBySha256 = new HashMap<>();
 		final Map<URI, RpkiRepository> fetchedLocations = new HashMap<>();
@@ -240,14 +238,15 @@ public class RpkiRepositoryValidationService {
 
 				byte[] content = Files.readAllBytes(file);
 				byte[] sha256 = Sha256.hash(content);
+				String hexSha256 = Hex.format(sha256);
 
-				objectsBySha256.compute(Hex.format(sha256), (key, existing) -> {
+				objectsBySha256.compute(hexSha256, (key, existing) -> {
 					if (existing == null) {
 						try {
 							existing = rpkiObjects.findBySha256(sha256).orElse(null);
 						} catch (ApiDataAccessException e) {
 							logger.log(Level.WARNING,
-									"There was an error fetching the object by its sha256 " + Hex.format(sha256), e);
+									"There was an error fetching the object by its sha256 " + hexSha256, e);
 							return null;
 						}
 					}
