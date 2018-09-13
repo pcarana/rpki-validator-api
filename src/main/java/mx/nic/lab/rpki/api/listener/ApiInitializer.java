@@ -13,6 +13,7 @@ import javax.servlet.ServletContextListener;
 import javax.servlet.annotation.WebListener;
 
 import mx.nic.lab.rpki.api.config.ApiConfiguration;
+import mx.nic.lab.rpki.api.validation.MasterScheduler;
 import mx.nic.lab.rpki.db.exception.InitializationException;
 import mx.nic.lab.rpki.db.service.DataAccessService;
 
@@ -78,6 +79,13 @@ public class ApiInitializer implements ServletContextListener {
 		} catch (IOException | InitializationException e) {
 			throw new IllegalArgumentException(e);
 		}
+		// Everything is ok for now, run initial validations
+		try {
+			MasterScheduler.initSchedule();
+		} catch (InitializationException e) {
+			throw new IllegalArgumentException(e);
+		}
+
 	}
 
 	private Properties loadConfig(String baseFileName, String userPathParamName) throws IOException {
@@ -130,7 +138,7 @@ public class ApiInitializer implements ServletContextListener {
 		try (InputStream inStream = ApiInitializer.class.getClassLoader().getResourceAsStream(fileName)) {
 			if (inStream != null) {
 				LogManager.getLogManager().readConfiguration(inStream);
-				System.setProperty("java.util.logging.config.file", userFilePath);
+				System.setProperty("java.util.logging.config.file", fileName);
 			}
 		}
 	}
@@ -138,6 +146,7 @@ public class ApiInitializer implements ServletContextListener {
 	@Override
 	public void contextDestroyed(ServletContextEvent event) {
 		servletContext = null;
+		MasterScheduler.shutdown();
 	}
 
 	public static ServletContext getServletContext() {

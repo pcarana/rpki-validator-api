@@ -1,0 +1,174 @@
+/**
+ * The BSD License
+ *
+ * Copyright (c) 2010-2018 RIPE NCC
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *   - Redistributions of source code must retain the above copyright notice,
+ *     this list of conditions and the following disclaimer.
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *   - Neither the name of the RIPE NCC nor the names of its contributors may be
+ *     used to endorse or promote products derived from this software without
+ *     specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+package mx.nic.lab.rpki.api.validation;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import mx.nic.lab.rpki.api.config.ApiConfiguration;
+import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
+import mx.nic.lab.rpki.db.pojo.RpkiObject;
+import mx.nic.lab.rpki.db.pojo.Tal;
+import mx.nic.lab.rpki.db.service.DataAccessService;
+import mx.nic.lab.rpki.db.spi.RpkiObjectDAO;
+import mx.nic.lab.rpki.db.spi.TalDAO;
+import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
+import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
+import net.ripe.rpki.commons.validation.ValidationResult;
+
+public class RpkiObjectCleanupService {
+
+	private static final Logger logger = Logger.getLogger(RpkiObjectCleanupService.class.getName());
+
+	private static TalDAO trustAnchors;
+	private static RpkiObjectDAO rpkiObjects;
+
+	private static Duration cleanupGraceDuration;
+
+	private RpkiObjectCleanupService() {
+	}
+
+	/**
+	 * Marks all RPKI objects that are reachable from a trust anchor by following
+	 * the entries in the manifests. Objects that are no longer reachable will be
+	 * deleted after a configurable grace duration.
+	 */
+	public static long cleanupRpkiObjects() {
+		cleanupGraceDuration = Duration.parse(ApiConfiguration.getRpkiObjectCleanupInterval());
+		trustAnchors = DataAccessService.getTalDAO();
+		rpkiObjects = DataAccessService.getRpkiObjectDAO();
+		if (trustAnchors == null || rpkiObjects == null) {
+			logger.log(Level.SEVERE,
+					"There was at least one necesary DAO whose implementation couldn't be found, exiting cleanup");
+			return -1L;
+		}
+		Instant now = Instant.now();
+		try {
+			for (Tal trustAnchor : trustAnchors.getAll(null)) {
+				logger.info("tracing objects for trust anchor " + trustAnchor);
+				X509ResourceCertificate resourceCertificate = trustAnchor.getCertificate();
+				if (resourceCertificate != null) {
+					traceCertificateAuthority(now, resourceCertificate);
+				}
+			}
+		} catch (ApiDataAccessException e) {
+			logger.log(Level.SEVERE, "There was an error getting the TALs, exiting cleanup", e);
+			return -1L;
+		}
+
+		return deleteUnreachableObjects(now);
+	}
+
+	private static long deleteUnreachableObjects(Instant now) {
+		Instant unreachableSince = now.minus(cleanupGraceDuration);
+		long count = 0;
+		try {
+			count = rpkiObjects.deleteUnreachableObjects(unreachableSince);
+		} catch (ApiDataAccessException e) {
+			logger.log(Level.SEVERE, "There was an error deleting the unreachable objects, exiting cleanup", e);
+			return -1L;
+		}
+		logger.info("Removed " + count + " RPKI objects that have not been marked reachable since " + unreachableSince);
+		return count;
+	}
+
+	private static void traceCertificateAuthority(Instant now, X509ResourceCertificate resourceCertificate)
+			throws ApiDataAccessException {
+		if (resourceCertificate == null || resourceCertificate.getManifestUri() == null) {
+			return;
+		}
+
+		Optional<RpkiObject> maybeManifest = rpkiObjects.findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type.MFT,
+				resourceCertificate.getSubjectKeyIdentifier());
+		maybeManifest.ifPresent(manifest -> {
+			markAndTraceObject(now, "manifest.mft", manifest);
+		});
+	}
+
+	private static void markAndTraceObject(Instant now, String name, RpkiObject rpkiObject) {
+		// Compare object instance identity to see if we've already visited
+		// the `rpkiObject` in the current run.
+		if (now == rpkiObject.getLastMarkedReachableAt()) {
+			logger.info("object already marked, skipping " + rpkiObject);
+		}
+
+		rpkiObject.markReachable(now);
+		switch (rpkiObject.getType()) {
+		case MFT:
+			traceManifest(now, name, rpkiObject);
+			break;
+		case CER:
+			traceCaCertificate(now, name, rpkiObject);
+			break;
+		default:
+			break;
+		}
+	}
+
+	private static void traceManifest(Instant now, String name, RpkiObject manifest) {
+		try {
+			rpkiObjects.findCertificateRepositoryObject(manifest.getId(), ManifestCms.class,
+					ValidationResult.withLocation(name)).ifPresent(manifestCms -> {
+						try {
+							rpkiObjects.findObjectsInManifest(manifestCms).forEach((entry, rpkiObject) -> {
+								markAndTraceObject(now, entry, rpkiObject);
+							});
+						} catch (ApiDataAccessException e) {
+							logger.log(Level.WARNING,
+									"There was an getting the object from the manifest at location " + name, e);
+						}
+					});
+		} catch (ApiDataAccessException e) {
+			logger.log(Level.WARNING, "There was an error tracing the manifest for " + name, e);
+		}
+	}
+
+	private static void traceCaCertificate(Instant now, String name, RpkiObject caCertificate) {
+		try {
+			rpkiObjects.findCertificateRepositoryObject(caCertificate.getId(), X509ResourceCertificate.class,
+					ValidationResult.withLocation(name)).ifPresent(certificate -> {
+						if (certificate.isCa() && certificate.getManifestUri() != null) {
+							try {
+								traceCertificateAuthority(now, certificate);
+							} catch (ApiDataAccessException e) {
+								logger.log(Level.WARNING, "There was an error tracing the cert authority for " + name,
+										e);
+							}
+						}
+					});
+		} catch (ApiDataAccessException e) {
+			logger.log(Level.WARNING, "There was an error tracing the CA cert for " + name, e);
+		}
+	}
+
+}

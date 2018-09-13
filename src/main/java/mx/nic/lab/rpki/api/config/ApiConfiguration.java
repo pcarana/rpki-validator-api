@@ -1,10 +1,18 @@
 package mx.nic.lab.rpki.api.config;
 
+import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.text.ParseException;
+import java.time.Duration;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
+
+import org.quartz.CronExpression;
 
 import mx.nic.lab.rpki.db.exception.InitializationException;
 
@@ -18,9 +26,27 @@ public class ApiConfiguration {
 
 	// Configuration keys
 	private static final String LANGUAGE_KEY = "language";
+	private static final String DOWNLOADED_REPO_LOCATION_KEY = "downloaded.repositories.location";
+	private static final String TALS_LOCATION_KEY = "tals.location";
+	private static final String RSYNC_DOWNLOAD_INTERVAL_KEY = "rsync.repository.download.interval";
+	private static final String TRUST_ANCHOR_VALIDATION_SCHEDULE_KEY = "trust.anchor.validation.schedule";
+	private static final String RPKI_REPOSITORY_VALIDATION_SCHEDULE_KEY = "rpki.repository.validation.schedule";
+	private static final String RPKI_OBJECT_CLEANUP_SCHEDULE_KEY = "rpki.object.cleanup.schedule";
+	private static final String RPKI_OBJECT_CLEANUP_INTERVAL_KEY = "rpki.object.cleanup.grace.duration";
+	private static final String VALIDATION_RUN_CLEANUP_SCHEDULE_KEY = "validation.run.cleanup.schedule";
+	private static final String VALIDATION_RUN_CLEANUP_INTERVAL_KEY = "validation.run.cleanup.grace.duration";
 
 	// Properties to configure
 	private static String serverLanguage;
+	private static String downloadedRepositoriesLocation;
+	private static String talsLocation;
+	private static String rsyncDownloadInterval;
+	private static String trustAnchorValidationSchedule;
+	private static String rpkiRepositoryValidationSchedule;
+	private static String rpkiObjectCleanupSchedule;
+	private static String rpkiObjectCleanupInterval;
+	private static String validationRunCleanupSchedule;
+	private static String validationRunCleanupInterval;
 
 	private ApiConfiguration() {
 		// No code
@@ -56,9 +82,91 @@ public class ApiConfiguration {
 			}
 		}
 
+		if (isPropertyNullOrEmpty(DOWNLOADED_REPO_LOCATION_KEY)) {
+			invalidProperties.add(DOWNLOADED_REPO_LOCATION_KEY);
+		} else {
+			downloadedRepositoriesLocation = systemProperties.getProperty(DOWNLOADED_REPO_LOCATION_KEY).trim();
+			if (!isValidLocation(downloadedRepositoriesLocation, exceptions)) {
+				invalidProperties.add(DOWNLOADED_REPO_LOCATION_KEY);
+			}
+		}
+
+		if (isPropertyNullOrEmpty(TALS_LOCATION_KEY)) {
+			invalidProperties.add(TALS_LOCATION_KEY);
+		} else {
+			talsLocation = systemProperties.getProperty(TALS_LOCATION_KEY).trim();
+			if (!isValidLocation(talsLocation, exceptions)) {
+				invalidProperties.add(TALS_LOCATION_KEY);
+			}
+		}
+
+		if (isPropertyNullOrEmpty(RSYNC_DOWNLOAD_INTERVAL_KEY)) {
+			invalidProperties.add(RSYNC_DOWNLOAD_INTERVAL_KEY);
+		} else {
+			rsyncDownloadInterval = systemProperties.getProperty(RSYNC_DOWNLOAD_INTERVAL_KEY).trim();
+			if (!isValidDuration(rsyncDownloadInterval, exceptions)) {
+				invalidProperties.add(RSYNC_DOWNLOAD_INTERVAL_KEY);
+			}
+		}
+
+		if (isPropertyNullOrEmpty(TRUST_ANCHOR_VALIDATION_SCHEDULE_KEY)) {
+			invalidProperties.add(TRUST_ANCHOR_VALIDATION_SCHEDULE_KEY);
+		} else {
+			trustAnchorValidationSchedule = systemProperties.getProperty(TRUST_ANCHOR_VALIDATION_SCHEDULE_KEY).trim();
+			if (!isValidCronExpression(trustAnchorValidationSchedule, exceptions)) {
+				invalidProperties.add(TRUST_ANCHOR_VALIDATION_SCHEDULE_KEY);
+			}
+		}
+
+		if (isPropertyNullOrEmpty(RPKI_REPOSITORY_VALIDATION_SCHEDULE_KEY)) {
+			invalidProperties.add(RPKI_REPOSITORY_VALIDATION_SCHEDULE_KEY);
+		} else {
+			rpkiRepositoryValidationSchedule = systemProperties.getProperty(RPKI_REPOSITORY_VALIDATION_SCHEDULE_KEY)
+					.trim();
+			if (!isValidCronExpression(rpkiRepositoryValidationSchedule, exceptions)) {
+				invalidProperties.add(RPKI_REPOSITORY_VALIDATION_SCHEDULE_KEY);
+			}
+		}
+
+		if (isPropertyNullOrEmpty(RPKI_OBJECT_CLEANUP_SCHEDULE_KEY)) {
+			invalidProperties.add(RPKI_OBJECT_CLEANUP_SCHEDULE_KEY);
+		} else {
+			rpkiObjectCleanupSchedule = systemProperties.getProperty(RPKI_OBJECT_CLEANUP_SCHEDULE_KEY).trim();
+			if (!isValidCronExpression(rpkiObjectCleanupSchedule, exceptions)) {
+				invalidProperties.add(RPKI_OBJECT_CLEANUP_SCHEDULE_KEY);
+			}
+		}
+
+		if (isPropertyNullOrEmpty(RPKI_OBJECT_CLEANUP_INTERVAL_KEY)) {
+			invalidProperties.add(RPKI_OBJECT_CLEANUP_INTERVAL_KEY);
+		} else {
+			rpkiObjectCleanupInterval = systemProperties.getProperty(RPKI_OBJECT_CLEANUP_INTERVAL_KEY).trim();
+			if (!isValidDuration(rpkiObjectCleanupInterval, exceptions)) {
+				invalidProperties.add(RPKI_OBJECT_CLEANUP_INTERVAL_KEY);
+			}
+		}
+
+		if (isPropertyNullOrEmpty(VALIDATION_RUN_CLEANUP_SCHEDULE_KEY)) {
+			invalidProperties.add(VALIDATION_RUN_CLEANUP_SCHEDULE_KEY);
+		} else {
+			validationRunCleanupSchedule = systemProperties.getProperty(VALIDATION_RUN_CLEANUP_SCHEDULE_KEY).trim();
+			if (!isValidCronExpression(validationRunCleanupSchedule, exceptions)) {
+				invalidProperties.add(VALIDATION_RUN_CLEANUP_SCHEDULE_KEY);
+			}
+		}
+
+		if (isPropertyNullOrEmpty(VALIDATION_RUN_CLEANUP_INTERVAL_KEY)) {
+			invalidProperties.add(VALIDATION_RUN_CLEANUP_INTERVAL_KEY);
+		} else {
+			validationRunCleanupInterval = systemProperties.getProperty(VALIDATION_RUN_CLEANUP_INTERVAL_KEY).trim();
+			if (!isValidDuration(validationRunCleanupInterval, exceptions)) {
+				invalidProperties.add(VALIDATION_RUN_CLEANUP_INTERVAL_KEY);
+			}
+		}
+
 		if (!invalidProperties.isEmpty()) {
 			InitializationException invalidValueException = new InitializationException(
-					"The following required properties were not found or are invalid values in configuration file : "
+					"The following required properties were not found or have invalid values in configuration file : "
 							+ invalidProperties.toString());
 			for (Exception exception : exceptions) {
 				invalidValueException.addSuppressed(exception);
@@ -79,11 +187,78 @@ public class ApiConfiguration {
 		return systemProperty == null || systemProperty.trim().isEmpty();
 	}
 
+	private static boolean isValidLocation(String location, List<Exception> exceptions) {
+		try {
+			Path validPath = Paths.get(location);
+			File validFile = validPath.toFile();
+			if (validFile.exists() && validFile.isDirectory()) {
+				return true;
+			}
+			exceptions.add(
+					new IllegalArgumentException("The location \"" + location + "\" isn't valid or isn't a directory"));
+		} catch (Exception e) {
+			exceptions.add(e);
+		}
+		return false;
+	}
+
+	private static boolean isValidDuration(String value, List<Exception> exceptions) {
+		try {
+			Duration.parse(value);
+			return true;
+		} catch (DateTimeParseException e) {
+			exceptions.add(new IllegalArgumentException("The interval " + value + " isn't valid"));
+		}
+		return false;
+	}
+
+	private static boolean isValidCronExpression(String value, List<Exception> exceptions) {
+		try {
+			CronExpression.validateExpression(value);
+			return true;
+		} catch (ParseException e) {
+			exceptions.add(e);
+		}
+		return false;
+	}
+
 	public static String getServerLanguage() {
 		return serverLanguage;
 	}
 
-	public static void setServerLanguage(String serverLanguage) {
-		ApiConfiguration.serverLanguage = serverLanguage;
+	public static String getDownloadedRepositoriesLocation() {
+		return downloadedRepositoriesLocation;
+	}
+
+	public static String getTalsLocation() {
+		return talsLocation;
+	}
+
+	public static String getRsyncDownloadInterval() {
+		return rsyncDownloadInterval;
+	}
+
+	public static String getTrustAnchorValidationSchedule() {
+		return trustAnchorValidationSchedule;
+	}
+
+	public static String getRpkiRepositoryValidationSchedule() {
+		return rpkiRepositoryValidationSchedule;
+	}
+
+	public static String getRpkiObjectCleanupSchedule() {
+		return rpkiObjectCleanupSchedule;
+	}
+
+	public static String getRpkiObjectCleanupInterval() {
+		return rpkiObjectCleanupInterval;
+	}
+
+	public static String getValidationRunCleanupSchedule() {
+		return validationRunCleanupSchedule;
+	}
+
+	public static String getValidationRunCleanupInterval() {
+		return validationRunCleanupInterval;
 	}
 }

@@ -1,6 +1,13 @@
 package mx.nic.lab.rpki.api.util;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.StringReader;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -10,10 +17,15 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
+
 import mx.nic.lab.rpki.api.exception.BadRequestException;
 import mx.nic.lab.rpki.api.exception.HttpException;
 import mx.nic.lab.rpki.api.exception.NotFoundException;
 import mx.nic.lab.rpki.db.pojo.PagingParameters;
+import mx.nic.lab.rpki.db.pojo.Tal;
+import mx.nic.lab.rpki.db.pojo.TalUri;
 
 /**
  * Utilery class
@@ -103,6 +115,16 @@ public class Util {
 		SimpleDateFormat df = new SimpleDateFormat(DATE_FORMAT);
 		return df.format(date);
 	}
+
+	// FIXME @pcarana May be useful later, if not delete it
+	/*
+	 * public String formatValidationCheck(ValidationCheck validationCheck, Locale
+	 * locale) { ResourceBundle rb = ResourceBundle.getBundle("messages", locale);
+	 * String messageKey = validationCheck.getKey() + "." +
+	 * validationCheck.getStatus().name().toLowerCase(); return
+	 * rb.getString(MessageFormat.format(messageKey,
+	 * validationCheck.getParameters())); }
+	 */
 
 	/**
 	 * Get an instance from the received {@link HttpServletRequest}, only 3 query
@@ -209,5 +231,69 @@ public class Util {
 			}
 		}
 		return pagingParameters;
+	}
+
+	/**
+	 * Load a TAL from a "*.tal" file
+	 * 
+	 * @param file
+	 * @return A {@link Tal} created from the file
+	 * @throws TrustAnchorExtractorException
+	 *             when the object couldn't be loaded
+	 */
+	public static Tal loadTalfromFile(File file) throws TrustAnchorExtractorException {
+		try {
+			String contents = Files.toString(file, Charsets.UTF_8);
+			String trimmed = contents.trim();
+			if (!looksLikeUri(trimmed)) {
+				throw new IllegalArgumentException("First line isn't a valid URI");
+			}
+			return readStandardTrustAnchorLocator(file.getName(), trimmed);
+		} catch (IllegalArgumentException | URISyntaxException | IOException e) {
+			throw new TrustAnchorExtractorException(
+					"failed to load trust anchor locator " + file + ": " + e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * @see <a href="https://tools.ietf.org/html/rfc7730">RFC 7730</a>
+	 */
+	private static Tal readStandardTrustAnchorLocator(String fileName, String contents)
+			throws URISyntaxException, IOException {
+		String caName = fileName.replace(".tal", "");
+		final ArrayList<URI> certificateLocations = new ArrayList<>();
+		try (final BufferedReader reader = new BufferedReader(new StringReader(contents))) {
+			String line;
+			while ((line = reader.readLine()) != null) {
+				final String trimmed = line.trim();
+				if (looksLikeUri(trimmed)) {
+					certificateLocations.add(new URI(trimmed));
+				} else
+					break;
+			}
+
+			if (line == null)
+				throw new IllegalArgumentException("publicKeyInfo not found in TAL file " + fileName);
+
+			StringBuilder publicKeyInfo = new StringBuilder(line.trim());
+			while ((line = reader.readLine()) != null) {
+				publicKeyInfo.append(line.trim());
+			}
+			Tal newTal = new Tal();
+			newTal.setName(caName);
+			newTal.setPublicKey(publicKeyInfo.toString());
+			newTal.setSyncStatus(Tal.SyncStatus.UNSYNCHRONIZED.toString());
+			newTal.setValidationStatus(Tal.ValidationStatus.PENDING.toString());
+			certificateLocations.forEach((uri) -> {
+				TalUri talUri = new TalUri();
+				talUri.setLocation(uri.toString());
+				newTal.getTalUris().add(talUri);
+			});
+			return newTal;
+		}
+	}
+
+	private static boolean looksLikeUri(String string) {
+		return string.startsWith("rsync://") || string.startsWith("https://") || string.startsWith("http://");
 	}
 }
