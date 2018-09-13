@@ -549,17 +549,17 @@ public class CMSUtil {
 						if (addrOrRangeEnc instanceof ASN1BitString) {
 							// It's an addressPrefix
 							ASN1BitString addressPrefix = DERBitString.getInstance(addrOrRangeEnc);
-							addrOrRangeBuilder.add("addressPrefix", getBytesAsHexString(addressPrefix.getOctets()));
+							addrOrRangeBuilder.add("addressPrefix", getBytesAsHexString(addressPrefix.getBytes()));
 						} else {
 							// It's an addressRange sequence
 							ASN1Sequence addrRange = ASN1Sequence.getInstance(addrOrRangeEnc);
 							JsonObjectBuilder rangeBuilder = Json.createObjectBuilder();
 							// min
 							ASN1BitString min = DERBitString.getInstance(addrRange.getObjectAt(0));
-							rangeBuilder.add("min", getBytesAsHexString(min.getOctets()));
+							rangeBuilder.add("min", getBytesAsHexString(min.getBytes()));
 							// max
 							ASN1BitString max = DERBitString.getInstance(addrRange.getObjectAt(1));
-							rangeBuilder.add("max", getBytesAsHexString(max.getOctets()));
+							rangeBuilder.add("max", getBytesAsHexString(max.getBytes()));
 							addrOrRangeBuilder.add("addressRange", rangeBuilder);
 						}
 						addrOrRangesBuilder.add(addrOrRangeBuilder);
@@ -658,7 +658,7 @@ public class CMSUtil {
 
 					// address
 					ASN1BitString address = DERBitString.getInstance(ipAddressSeq.getObjectAt(0));
-					addressBuilder.add("address", getBytesAsHexString(address.getOctets()));
+					addressBuilder.add("address", getBytesAsHexString(address.getBytes()));
 
 					// maxLength (Optional)
 					if (ipAddressSeq.size() > 1) {
