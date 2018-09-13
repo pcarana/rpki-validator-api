@@ -34,7 +34,9 @@ public class RoaSingleResult extends ApiSingleResult<Roa> {
 		addKeyValueToBuilder(builder, "prefix", roa.getPrefixText(), true);
 		addKeyValueToBuilder(builder, "prefixLength", roa.getPrefixLength(), true);
 		addKeyValueToBuilder(builder, "prefixMaxLength", roa.getPrefixMaxLength(), true);
-		addKeyValueToBuilder(builder, "cms", CMSUtil.getCmsAsJson(roa.getCmsData(), CMSUtil.CMSProfile.ROA), true);
+		addKeyValueToBuilder(builder, "cms",
+				CMSUtil.getCmsAsJson(roa.getRpkiObject().getEncodedRpkiObject().getEncoded(), CMSUtil.CMSProfile.ROA),
+				true);
 		buildRoaGbrs(builder, roa);
 
 		return builder.build();
@@ -57,8 +59,8 @@ public class RoaSingleResult extends ApiSingleResult<Roa> {
 			JsonObjectBuilder objBuilder = Json.createObjectBuilder();
 			// The id is omitted since is used for internal purposes
 			addKeyValueToBuilder(objBuilder, "vcard", gbr.getVcard(), true);
-			addKeyValueToBuilder(objBuilder, "cms", CMSUtil.getCmsAsJson(gbr.getCmsData(), CMSUtil.CMSProfile.GBR),
-					true);
+			addKeyValueToBuilder(objBuilder, "cms", CMSUtil.getCmsAsJson(
+					gbr.getRpkiObject().getEncodedRpkiObject().getEncoded(), CMSUtil.CMSProfile.GBR), true);
 			arrayBuilder.add(objBuilder);
 		}
 		builder.add("gbrs", arrayBuilder);

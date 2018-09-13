@@ -33,7 +33,8 @@ public class TalSingleResult extends ApiSingleResult<Tal> {
 		addKeyValueToBuilder(builder, "id", tal.getId(), true);
 		addKeyValueToBuilder(builder, "lastSync", tal.getLastSync(), true);
 		addKeyValueToBuilder(builder, "publicKey", tal.getPublicKey(), true);
-		addKeyValueToBuilder(builder, "status", tal.getStatus(), true);
+		addKeyValueToBuilder(builder, "syncStatus", tal.getSyncStatus(), true);
+		addKeyValueToBuilder(builder, "loadedCer", CMSUtil.getCertAsJson(tal.getLoadedCer()), true);
 		addKeyValueToBuilder(builder, "name", tal.getName(), true);
 		buildTalUris(builder, tal);
 		buildTalFiles(builder, tal);
@@ -56,9 +57,7 @@ public class TalSingleResult extends ApiSingleResult<Tal> {
 		JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
 		for (TalUri talUri : tal.getTalUris()) {
 			JsonObjectBuilder objBuilder = Json.createObjectBuilder();
-			addKeyValueToBuilder(objBuilder, "value", talUri.getValue(), true);
-			addKeyValueToBuilder(objBuilder, "loadedCer", CMSUtil.getCertAsJson(talUri.getLoadedCer()), true);
-			addKeyValueToBuilder(objBuilder, "loaded", talUri.getLoaded(), true);
+			addKeyValueToBuilder(objBuilder, "location", talUri.getLocation(), true);
 			arrayBuilder.add(objBuilder);
 		}
 		builder.add("uris", arrayBuilder);

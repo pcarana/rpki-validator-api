@@ -34,7 +34,7 @@ public class TalListServlet extends TalServlet {
 		validSortKeysMap = new HashMap<>();
 		validSortKeysMap.put("id", Tal.ID);
 		validSortKeysMap.put("lastSync", Tal.LAST_SYNC);
-		validSortKeysMap.put("status", Tal.STATUS);
+		validSortKeysMap.put("syncStatus", Tal.SYNC_STATUS);
 		validSortKeysMap.put("name", Tal.NAME);
 	}
 

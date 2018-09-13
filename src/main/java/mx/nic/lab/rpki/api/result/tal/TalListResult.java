@@ -9,7 +9,6 @@ import javax.json.JsonObjectBuilder;
 import javax.json.JsonStructure;
 
 import mx.nic.lab.rpki.api.result.ApiListResult;
-import mx.nic.lab.rpki.api.util.CMSUtil;
 import mx.nic.lab.rpki.db.pojo.Tal;
 import mx.nic.lab.rpki.db.pojo.TalUri;
 
@@ -47,7 +46,7 @@ public class TalListResult extends ApiListResult<Tal> {
 		addKeyValueToBuilder(builder, "id", tal.getId(), true);
 		addKeyValueToBuilder(builder, "lastSync", tal.getLastSync(), true);
 		addKeyValueToBuilder(builder, "publicKey", tal.getPublicKey(), true);
-		addKeyValueToBuilder(builder, "status", tal.getStatus(), true);
+		addKeyValueToBuilder(builder, "syncStatus", tal.getSyncStatus(), true);
 		addKeyValueToBuilder(builder, "name", tal.getName(), true);
 		buildTalUris(builder, tal);
 
@@ -69,9 +68,7 @@ public class TalListResult extends ApiListResult<Tal> {
 		JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
 		for (TalUri talUri : tal.getTalUris()) {
 			JsonObjectBuilder objBuilder = Json.createObjectBuilder();
-			addKeyValueToBuilder(objBuilder, "value", talUri.getValue(), true);
-			addKeyValueToBuilder(objBuilder, "loadedCer", CMSUtil.getCertAsJson(talUri.getLoadedCer()), true);
-			addKeyValueToBuilder(objBuilder, "loaded", talUri.getLoaded(), true);
+			addKeyValueToBuilder(objBuilder, "location", talUri.getLocation(), true);
 			arrayBuilder.add(objBuilder);
 		}
 		builder.add("uris", arrayBuilder);
