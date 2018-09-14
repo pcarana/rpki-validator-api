@@ -125,8 +125,9 @@ public class CertificateTreeValidationService {
 		}
 		logger.info("starting tree validation for " + trustAnchor.getName() + " with id " + trustAnchorId);
 
-		ValidationRun validationRun = new ValidationRun(ValidationRun.Type.CERTIFICATE_TREE, trustAnchor);
 		String trustAnchorLocation = trustAnchor.getTalUris().get(0).getLocation();
+		ValidationRun validationRun = new ValidationRun(ValidationRun.Type.CERTIFICATE_TREE, trustAnchorId,
+				trustAnchorLocation);
 		ValidationResult validationResult = ValidationResult.withLocation(trustAnchorLocation);
 		try {
 			X509ResourceCertificate certificate = trustAnchor.getCertificate();

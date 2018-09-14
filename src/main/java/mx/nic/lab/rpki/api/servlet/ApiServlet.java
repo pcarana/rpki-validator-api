@@ -3,6 +3,7 @@ package mx.nic.lab.rpki.api.servlet;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.MissingResourceException;
@@ -35,6 +36,13 @@ public abstract class ApiServlet extends HttpServlet {
 	 */
 	private static final long serialVersionUID = 1L;
 
+	/**
+	 * List of available bundles ordered by priority (if the first has the searched
+	 * key, then return that value; otherwise keep searching at the next, and so on)
+	 */
+	private static final List<String> bundles = Arrays.asList("META-INF/labels/errors", "validation",
+			"META-INF/labels/validation");
+
 	private static final Logger logger = Logger.getLogger(ApiServlet.class.getName());
 
 	/**
@@ -66,14 +74,12 @@ public abstract class ApiServlet extends HttpServlet {
 		// and the parameters values (if they are present)
 		String labelPattern = "(\")((\\#\\{)([^\"]+)(\\}))(\")";
 		Matcher labelMatcher = Pattern.compile(labelPattern).matcher(jsonString);
-		ResourceBundle bundle = null;
 		try {
-			bundle = ResourceBundle.getBundle("META-INF/labels/errors", locale);
 			String replacement;
 			while (labelMatcher.find()) {
 				String[] values = labelMatcher.group(4).split("\\}\\{");
 				String key = values[0];
-				replacement = bundle.containsKey(key) ? bundle.getString(key) : "";
+				replacement = getValueFromBundles(key, locale);
 				// Check for parameters and store its value
 				if (values.length > 1) {
 					List<String> parameterValues = new ArrayList<>();
@@ -88,11 +94,7 @@ public abstract class ApiServlet extends HttpServlet {
 			}
 			response.setHeader("Content-Language", locale.toLanguageTag());
 		} catch (MissingResourceException e) {
-			// Fallback: if no bundle was found, try to use the default
-			if (!locale.equals(Locale.getDefault())) {
-				return getLocaleJson(Locale.getDefault(), jsonString, response);
-			}
-			// Not even the default was found (that's bad), so this is an internal error,
+			// Not even a default bundle was found (that's bad), this is an internal error,
 			// replace the labels with empty strings and log
 			logger.log(Level.SEVERE, "Error loading bundle, still responding to the request", e);
 			while (labelMatcher.find()) {
@@ -148,6 +150,53 @@ public abstract class ApiServlet extends HttpServlet {
 			String body = getLocaleJson(req.getLocale(), result.toJsonStructure().toString(), resp);
 			resp.getWriter().print(body);
 		}
+	}
+
+	/**
+	 * Search the indicated <code>key</code> at the configured bundles, throws a
+	 * {@link MissingResourceException} if nothing was found
+	 * 
+	 * @param key
+	 * @param locale
+	 * @return
+	 */
+	private String getValueFromBundles(String key, Locale locale) {
+		String found;
+		for (String location : bundles) {
+			found = getValueFromSingleBundle(location, key, locale);
+			if (found != null) {
+				return found;
+			}
+		}
+		throw new MissingResourceException("None of the bundles " + bundles + " had the key '" + key + "'",
+				String.class.getName(), key);
+	}
+
+	/**
+	 * Search the <code>key</code> at the bundle loaded from the
+	 * <code>location</code>, if the bundle with the <code>locale</code> isn't found
+	 * then try to get it with the default locale; if nothing is found, return
+	 * <code>null</code>
+	 * 
+	 * @param location
+	 * @param key
+	 * @param locale
+	 * @return
+	 */
+	private String getValueFromSingleBundle(String location, String key, Locale locale) {
+		try {
+			ResourceBundle bundle = ResourceBundle.getBundle(location, locale);
+			if (bundle.containsKey(key)) {
+				return bundle.getString(key);
+			}
+		} catch (MissingResourceException e) {
+			// Fallback: if no bundle was found, try to use the default
+			if (!locale.equals(Locale.getDefault())) {
+				return getValueFromSingleBundle(location, key, Locale.getDefault());
+			}
+		}
+		// Nothing found return null
+		return null;
 	}
 
 	@Override

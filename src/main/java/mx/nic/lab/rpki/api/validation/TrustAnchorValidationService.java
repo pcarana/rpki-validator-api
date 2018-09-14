@@ -169,7 +169,8 @@ public class TrustAnchorValidationService {
 		logger.info("trust anchor " + trustAnchor.getName() + " located at " + trustAnchor.getTalUris()
 				+ " with subject public key info " + trustAnchor.getPublicKey());
 
-		ValidationRun validationRun = new ValidationRun(ValidationRun.Type.TRUST_ANCHOR, trustAnchor);
+		ValidationRun validationRun = new ValidationRun(ValidationRun.Type.TRUST_ANCHOR, trustAnchorId,
+				trustAnchor.getTalUris().get(0).getLocation());
 		try {
 			MasterScheduler.triggerCertificateTreeValidation(trustAnchor);
 		} catch (CommandExecutionException e) {

@@ -9,8 +9,9 @@ import javax.json.JsonStructure;
 import mx.nic.lab.rpki.api.result.ApiSingleResult;
 import mx.nic.lab.rpki.api.util.CMSUtil;
 import mx.nic.lab.rpki.db.pojo.Tal;
-import mx.nic.lab.rpki.db.pojo.TalFile;
 import mx.nic.lab.rpki.db.pojo.TalUri;
+import mx.nic.lab.rpki.db.pojo.ValidationCheck;
+import mx.nic.lab.rpki.db.pojo.ValidationRun;
 
 /**
  * Result that represents a single Tal
@@ -37,7 +38,7 @@ public class TalSingleResult extends ApiSingleResult<Tal> {
 		addKeyValueToBuilder(builder, "loadedCer", CMSUtil.getCertAsJson(tal.getLoadedCer()), true);
 		addKeyValueToBuilder(builder, "name", tal.getName(), true);
 		buildTalUris(builder, tal);
-		buildTalFiles(builder, tal);
+		buildValidationRuns(builder, tal);
 
 		return builder.build();
 	}
@@ -64,26 +65,64 @@ public class TalSingleResult extends ApiSingleResult<Tal> {
 	}
 
 	/**
-	 * Adds the {@link TalFile} list of the {@link Tal} as a JSON Array to the
+	 * Adds the {@link ValidationRun} list of the {@link Tal} as a JSON Array to the
 	 * <code>JsonObjectBuilder</code> sent
 	 * 
 	 * @param builder
 	 * @param tal
 	 */
-	protected void buildTalFiles(JsonObjectBuilder builder, Tal tal) {
-		if (tal.getTalFiles() == null || tal.getTalFiles().isEmpty()) {
-			builder.add("files", JsonObject.EMPTY_JSON_ARRAY);
+	protected void buildValidationRuns(JsonObjectBuilder builder, Tal tal) {
+		if (tal.getValidationRuns() == null || tal.getValidationRuns().isEmpty()) {
+			builder.add("validations", JsonObject.EMPTY_JSON_ARRAY);
 			return;
 		}
 		JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
-		for (TalFile talFile : tal.getTalFiles()) {
+		for (ValidationRun validationRun : tal.getValidationRuns()) {
 			JsonObjectBuilder objBuilder = Json.createObjectBuilder();
-			addKeyValueToBuilder(objBuilder, "fileType", talFile.getFileType(), true);
-			addKeyValueToBuilder(objBuilder, "status", talFile.getStatus().toString(), true);
-			addKeyValueToBuilder(objBuilder, "message", talFile.getMessage(), true);
-			addKeyValueToBuilder(objBuilder, "location", talFile.getLocation(), true);
+			addKeyValueToBuilder(objBuilder, "status", validationRun.getStatus().toString(), true);
+			addKeyValueToBuilder(objBuilder, "type", validationRun.getType().toString(), true);
+			addKeyValueToBuilder(objBuilder, "completedAt", validationRun.getCompletedAt().toString(), true);
+			buildValidationChecks(objBuilder, validationRun);
 			arrayBuilder.add(objBuilder);
 		}
-		builder.add("files", arrayBuilder);
+		builder.add("validations", arrayBuilder);
+	}
+
+	/**
+	 * Adds the {@link ValidationCheck} list of the {@link ValidationRun} as a JSON
+	 * Array to the <code>JsonObjectBuilder</code> sent
+	 * 
+	 * @param builder
+	 * @param validationRun
+	 */
+	protected void buildValidationChecks(JsonObjectBuilder builder, ValidationRun validationRun) {
+		if (validationRun.getValidationChecks() == null || validationRun.getValidationChecks().isEmpty()) {
+			builder.add("checks", JsonObject.EMPTY_JSON_ARRAY);
+			return;
+		}
+		JsonArrayBuilder checksBuilder = Json.createArrayBuilder();
+		for (ValidationCheck validationCheck : validationRun.getValidationChecks()) {
+			JsonObjectBuilder checkBuilder = Json.createObjectBuilder();
+			addKeyValueToBuilder(checkBuilder, "location", validationCheck.getLocation(), true);
+			addKeyValueToBuilder(checkBuilder, "status", validationCheck.getStatus().toString(), true);
+			// Prepare the key to search it at the bundles
+			// The final value is #{key}.{status}{param0}{paramN}...
+			StringBuilder keyBuilder = new StringBuilder();
+			keyBuilder.append("#{");
+			keyBuilder.append(validationCheck.getKey());
+			keyBuilder.append(".");
+			keyBuilder.append(validationCheck.getStatus().toString().toLowerCase());
+			keyBuilder.append("}");
+			if (validationCheck.getParameters() != null) {
+				for (String parameter : validationCheck.getParameters()) {
+					if (parameter != null && !parameter.trim().isEmpty()) {
+						keyBuilder.append("{").append(parameter).append("}");
+					}
+				}
+			}
+			addKeyValueToBuilder(checkBuilder, "key", keyBuilder.toString(), true);
+			checksBuilder.add(checkBuilder);
+		}
+		builder.add("checks", checksBuilder);
 	}
 }
