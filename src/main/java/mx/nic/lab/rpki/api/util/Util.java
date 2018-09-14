@@ -116,16 +116,6 @@ public class Util {
 		return df.format(date);
 	}
 
-	// FIXME @pcarana May be useful later, if not delete it
-	/*
-	 * public String formatValidationCheck(ValidationCheck validationCheck, Locale
-	 * locale) { ResourceBundle rb = ResourceBundle.getBundle("messages", locale);
-	 * String messageKey = validationCheck.getKey() + "." +
-	 * validationCheck.getStatus().name().toLowerCase(); return
-	 * rb.getString(MessageFormat.format(messageKey,
-	 * validationCheck.getParameters())); }
-	 */
-
 	/**
 	 * Get an instance from the received {@link HttpServletRequest}, only 3 query
 	 * parameters are expected: limit, offset and sort; where:<br>
