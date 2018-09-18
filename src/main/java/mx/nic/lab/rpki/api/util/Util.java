@@ -272,8 +272,6 @@ public class Util {
 			Tal newTal = new Tal();
 			newTal.setName(caName);
 			newTal.setPublicKey(publicKeyInfo.toString());
-			newTal.setSyncStatus(Tal.SyncStatus.UNSYNCHRONIZED.toString());
-			newTal.setValidationStatus(Tal.ValidationStatus.PENDING.toString());
 			certificateLocations.forEach((uri) -> {
 				TalUri talUri = new TalUri();
 				talUri.setLocation(uri.toString());

@@ -37,8 +37,6 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.quartz.JobKey;
 
-import mx.nic.lab.rpki.db.pojo.Tal;
-
 @DisallowConcurrentExecution
 public class QuartzCertificateTreeValidationJob implements Job {
 
@@ -51,14 +49,13 @@ public class QuartzCertificateTreeValidationJob implements Job {
 		CertificateTreeValidationService.validate(trustAnchorId);
 	}
 
-	static JobDetail buildJob(Tal trustAnchor) {
+	static JobDetail buildJob(Long trustAnchorId) {
 		return JobBuilder.newJob(QuartzCertificateTreeValidationJob.class).storeDurably()
-				.withIdentity(getJobKey(trustAnchor)).usingJobData(TRUST_ANCHOR_ID_KEY, trustAnchor.getId()).build();
+				.withIdentity(getJobKey(trustAnchorId)).usingJobData(TRUST_ANCHOR_ID_KEY, trustAnchorId).build();
 	}
 
-	static JobKey getJobKey(Tal trustAnchor) {
-		return new JobKey(
-				String.format("%s#%d", QuartzCertificateTreeValidationJob.class.getName(), trustAnchor.getId()));
+	static JobKey getJobKey(Long trustAnchorId) {
+		return new JobKey(String.format("%s#%d", QuartzCertificateTreeValidationJob.class.getName(), trustAnchorId));
 	}
 
 	public long getTrustAnchorId() {

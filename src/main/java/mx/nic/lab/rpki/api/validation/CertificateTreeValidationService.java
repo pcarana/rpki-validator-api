@@ -56,16 +56,12 @@ import com.google.common.base.Objects;
 import mx.nic.lab.rpki.api.util.RsyncUtils;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.exception.ErrorCodes;
-import mx.nic.lab.rpki.db.exception.InitializationException;
 import mx.nic.lab.rpki.db.pojo.RpkiObject;
 import mx.nic.lab.rpki.db.pojo.RpkiRepository;
 import mx.nic.lab.rpki.db.pojo.Tal;
 import mx.nic.lab.rpki.db.pojo.ValidationRun;
 import mx.nic.lab.rpki.db.service.DataAccessService;
-import mx.nic.lab.rpki.db.spi.RpkiObjectDAO;
 import mx.nic.lab.rpki.db.spi.RpkiRepositoryDAO;
-import mx.nic.lab.rpki.db.spi.TalDAO;
-import mx.nic.lab.rpki.db.spi.ValidationRunDAO;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.crypto.crl.X509Crl;
@@ -77,36 +73,14 @@ import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.commons.validation.ValidationString;
 import net.ripe.rpki.commons.validation.objectvalidators.CertificateRepositoryObjectValidationContext;
 
-public class CertificateTreeValidationService {
+public class CertificateTreeValidationService extends ValidationService {
 
 	private static final Logger logger = Logger.getLogger(CertificateTreeValidationService.class.getName());
 
 	private static final ValidationOptions VALIDATION_OPTIONS = new ValidationOptions();
 
-	private static RpkiRepositoryDAO rpkiRepositories;
-	private static RpkiObjectDAO rpkiObjects;
-	private static TalDAO trustAnchors;
-	private static ValidationRunDAO validationRuns;
-
 	private CertificateTreeValidationService() {
 		// No code
-	}
-
-	/**
-	 * Init what's required to run this service
-	 * 
-	 * @throws InitializationException
-	 */
-	public static void init() throws InitializationException {
-		rpkiRepositories = DataAccessService.getRpkiRepositoryDAO();
-		rpkiObjects = DataAccessService.getRpkiObjectDAO();
-		trustAnchors = DataAccessService.getTalDAO();
-		validationRuns = DataAccessService.getValidationRunDAO();
-		if (rpkiRepositories == null || rpkiObjects == null || trustAnchors == null || validationRuns == null) {
-			String message = "There was at least one necesary DAO whose implementation couldn't be found, " + "exiting "
-					+ CertificateTreeValidationService.class.getName();
-			throw new InitializationException(message);
-		}
 	}
 
 	public static void validate(long trustAnchorId) {
@@ -114,7 +88,7 @@ public class CertificateTreeValidationService {
 
 		Tal trustAnchor;
 		try {
-			trustAnchor = trustAnchors.getById(trustAnchorId);
+			trustAnchor = getTalDAO().getById(trustAnchorId);
 		} catch (ApiDataAccessException e) {
 			logger.log(Level.SEVERE, e.getMessage(), e);
 			return;
@@ -128,6 +102,13 @@ public class CertificateTreeValidationService {
 		String trustAnchorLocation = trustAnchor.getTalUris().get(0).getLocation();
 		ValidationRun validationRun = new ValidationRun(ValidationRun.Type.CERTIFICATE_TREE, trustAnchorId,
 				trustAnchorLocation);
+		// Create validation run with initial status (running)
+		try {
+			validationRun.setId(getValidationRunDAO().create(validationRun));
+		} catch (ApiDataAccessException e) {
+			logger.log(Level.SEVERE, "Error persisting validation run " + validationRun.toString(), e);
+			return;
+		}
 		ValidationResult validationResult = ValidationResult.withLocation(trustAnchorLocation);
 		try {
 			X509ResourceCertificate certificate = trustAnchor.getCertificate();
@@ -166,9 +147,9 @@ public class CertificateTreeValidationService {
 			logger.info("tree validation " + validationRun.getStatus() + " for " + trustAnchor);
 		}
 		try {
-			validationRuns.create(validationRun);
+			getValidationRunDAO().completeValidation(validationRun);
 		} catch (ApiDataAccessException e) {
-			logger.log(Level.SEVERE, "There was an error persisting the validation run", e);
+			logger.log(Level.SEVERE, "There was an error updating the validation run", e);
 		}
 	}
 
@@ -195,7 +176,7 @@ public class CertificateTreeValidationService {
 			URI manifestUri = certificate.getManifestUri();
 			temporary.setLocation(new ValidationLocation(manifestUri));
 
-			Optional<RpkiObject> manifestObject = rpkiObjects
+			Optional<RpkiObject> manifestObject = getRpkiObjectDAO()
 					.findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type.MFT, context.getSubjectKeyIdentifier());
 			if (!manifestObject.isPresent()) {
 				if (rpkiRepository.getStatus() == RpkiRepository.Status.FAILED) {
@@ -209,7 +190,7 @@ public class CertificateTreeValidationService {
 
 			Optional<ManifestCms> maybeManifest = manifestObject.flatMap(x -> {
 				try {
-					return rpkiObjects.findCertificateRepositoryObject(x.getId(), ManifestCms.class, temporary);
+					return getRpkiObjectDAO().findCertificateRepositoryObject(x.getId(), ManifestCms.class, temporary);
 				} catch (ApiDataAccessException e) {
 					logger.log(Level.SEVERE, e.getMessage(), e);
 					temporary.error(ValidationString.VALIDATOR_OBJECT_PROCESSING_EXCEPTION);
@@ -239,7 +220,7 @@ public class CertificateTreeValidationService {
 			Map.Entry<String, byte[]> crlEntry = crlEntries.get(0);
 			URI crlUri = manifestUri.resolve(crlEntry.getKey());
 
-			Optional<RpkiObject> crlObject = rpkiObjects.findBySha256(crlEntry.getValue());
+			Optional<RpkiObject> crlObject = getRpkiObjectDAO().findBySha256(crlEntry.getValue());
 			temporary.rejectIfFalse(crlObject.isPresent(), VALIDATOR_CRL_FOUND, crlUri.toASCIIString());
 			if (temporary.hasFailureForCurrentLocation()) {
 				return validatedObjects;
@@ -248,7 +229,7 @@ public class CertificateTreeValidationService {
 			temporary.setLocation(new ValidationLocation(crlUri));
 			Optional<X509Crl> crl = crlObject.flatMap(x -> {
 				try {
-					return rpkiObjects.findCertificateRepositoryObject(x.getId(), X509Crl.class, temporary);
+					return getRpkiObjectDAO().findCertificateRepositoryObject(x.getId(), X509Crl.class, temporary);
 				} catch (ApiDataAccessException e) {
 					logger.log(Level.SEVERE, e.getMessage(), e);
 					temporary.error(ValidationString.VALIDATOR_OBJECT_PROCESSING_EXCEPTION);
@@ -279,7 +260,7 @@ public class CertificateTreeValidationService {
 
 				Optional<CertificateRepositoryObject> maybeCertificateRepositoryObject = null;
 				try {
-					maybeCertificateRepositoryObject = rpkiObjects.findCertificateRepositoryObject(obj.getId(),
+					maybeCertificateRepositoryObject = getRpkiObjectDAO().findCertificateRepositoryObject(obj.getId(),
 							CertificateRepositoryObject.class, temporary);
 				} catch (ApiDataAccessException e) {
 					// TODO @pcarana Test behavior at this scenario
@@ -341,7 +322,7 @@ public class CertificateTreeValidationService {
 
 			Optional<RpkiObject> object = null;
 			try {
-				object = rpkiObjects.findBySha256(entry.getValue());
+				object = getRpkiObjectDAO().findBySha256(entry.getValue());
 			} catch (ApiDataAccessException e) {
 				logger.log(Level.SEVERE, e.getMessage(), e);
 				validationResult.error(ValidationString.VALIDATOR_OBJECT_PROCESSING_EXCEPTION);
@@ -405,7 +386,8 @@ public class CertificateTreeValidationService {
 	private static RpkiRepository findRsyncParentRepository(URI uri) {
 		for (URI parentURI : RsyncUtils.generateCandidateParentUris(uri)) {
 			try {
-				Optional<RpkiRepository> optional = rpkiRepositories.findByURI(parentURI.normalize().toASCIIString());
+				Optional<RpkiRepository> optional = getRpkiRepositoryDAO()
+						.findByURI(parentURI.normalize().toASCIIString());
 				if (optional.isPresent()) {
 					return optional.get();
 				}

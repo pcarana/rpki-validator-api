@@ -29,33 +29,24 @@
  */
 package mx.nic.lab.rpki.api.validation;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import mx.nic.lab.rpki.api.config.ApiConfiguration;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.pojo.RpkiObject;
 import mx.nic.lab.rpki.db.pojo.Tal;
-import mx.nic.lab.rpki.db.service.DataAccessService;
-import mx.nic.lab.rpki.db.spi.RpkiObjectDAO;
-import mx.nic.lab.rpki.db.spi.TalDAO;
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
 import net.ripe.rpki.commons.validation.ValidationResult;
 
-public class RpkiObjectCleanupService {
+public class RpkiObjectCleanupService extends ValidationService {
 
 	private static final Logger logger = Logger.getLogger(RpkiObjectCleanupService.class.getName());
 
-	private static TalDAO trustAnchors;
-	private static RpkiObjectDAO rpkiObjects;
-
-	private static Duration cleanupGraceDuration;
-
 	private RpkiObjectCleanupService() {
+		// No code
 	}
 
 	/**
@@ -64,17 +55,9 @@ public class RpkiObjectCleanupService {
 	 * deleted after a configurable grace duration.
 	 */
 	public static long cleanupRpkiObjects() {
-		cleanupGraceDuration = Duration.parse(ApiConfiguration.getRpkiObjectCleanupInterval());
-		trustAnchors = DataAccessService.getTalDAO();
-		rpkiObjects = DataAccessService.getRpkiObjectDAO();
-		if (trustAnchors == null || rpkiObjects == null) {
-			logger.log(Level.SEVERE,
-					"There was at least one necesary DAO whose implementation couldn't be found, exiting cleanup");
-			return -1L;
-		}
 		Instant now = Instant.now();
 		try {
-			for (Tal trustAnchor : trustAnchors.getAll(null)) {
+			for (Tal trustAnchor : getTalDAO().getAll(null)) {
 				logger.info("tracing objects for trust anchor " + trustAnchor);
 				X509ResourceCertificate resourceCertificate = trustAnchor.getCertificate();
 				if (resourceCertificate != null) {
@@ -90,10 +73,10 @@ public class RpkiObjectCleanupService {
 	}
 
 	private static long deleteUnreachableObjects(Instant now) {
-		Instant unreachableSince = now.minus(cleanupGraceDuration);
+		Instant unreachableSince = now.minus(getRpkiObjectCleanupGrace());
 		long count = 0;
 		try {
-			count = rpkiObjects.deleteUnreachableObjects(unreachableSince);
+			count = getRpkiObjectDAO().deleteUnreachableObjects(unreachableSince);
 		} catch (ApiDataAccessException e) {
 			logger.log(Level.SEVERE, "There was an error deleting the unreachable objects, exiting cleanup", e);
 			return -1L;
@@ -108,7 +91,7 @@ public class RpkiObjectCleanupService {
 			return;
 		}
 
-		Optional<RpkiObject> maybeManifest = rpkiObjects.findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type.MFT,
+		Optional<RpkiObject> maybeManifest = getRpkiObjectDAO().findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type.MFT,
 				resourceCertificate.getSubjectKeyIdentifier());
 		maybeManifest.ifPresent(manifest -> {
 			markAndTraceObject(now, "manifest.mft", manifest);
@@ -137,10 +120,10 @@ public class RpkiObjectCleanupService {
 
 	private static void traceManifest(Instant now, String name, RpkiObject manifest) {
 		try {
-			rpkiObjects.findCertificateRepositoryObject(manifest.getId(), ManifestCms.class,
+			getRpkiObjectDAO().findCertificateRepositoryObject(manifest.getId(), ManifestCms.class,
 					ValidationResult.withLocation(name)).ifPresent(manifestCms -> {
 						try {
-							rpkiObjects.findObjectsInManifest(manifestCms).forEach((entry, rpkiObject) -> {
+							getRpkiObjectDAO().findObjectsInManifest(manifestCms).forEach((entry, rpkiObject) -> {
 								markAndTraceObject(now, entry, rpkiObject);
 							});
 						} catch (ApiDataAccessException e) {
@@ -155,7 +138,7 @@ public class RpkiObjectCleanupService {
 
 	private static void traceCaCertificate(Instant now, String name, RpkiObject caCertificate) {
 		try {
-			rpkiObjects.findCertificateRepositoryObject(caCertificate.getId(), X509ResourceCertificate.class,
+			getRpkiObjectDAO().findCertificateRepositoryObject(caCertificate.getId(), X509ResourceCertificate.class,
 					ValidationResult.withLocation(name)).ifPresent(certificate -> {
 						if (certificate.isCa() && certificate.getManifestUri() != null) {
 							try {

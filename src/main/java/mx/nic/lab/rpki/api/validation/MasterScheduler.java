@@ -1,24 +1,16 @@
 package mx.nic.lab.rpki.api.validation;
 
-import java.io.File;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.quartz.CronScheduleBuilder;
-import org.quartz.JobDetail;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
-import org.quartz.SimpleScheduleBuilder;
 import org.quartz.TriggerBuilder;
 import org.quartz.impl.StdSchedulerFactory;
 
 import mx.nic.lab.rpki.api.config.ApiConfiguration;
-import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.exception.InitializationException;
-import mx.nic.lab.rpki.db.pojo.Tal;
-import mx.nic.lab.rpki.db.service.DataAccessService;
-import mx.nic.lab.rpki.db.spi.TalDAO;
 
 public class MasterScheduler {
 
@@ -37,46 +29,24 @@ public class MasterScheduler {
 	 *             if something goes wrong
 	 */
 	public static void initSchedule() throws InitializationException {
-		CertificateTreeValidationService.init();
-		RpkiRepositoryValidationService.init();
-		TrustAnchorValidationService.init();
+		ValidationService.init();
 		try {
 			scheduler = StdSchedulerFactory.getDefaultScheduler();
 		} catch (SchedulerException e) {
 			throw new InitializationException("The main scheduler couldn't be initialized", e);
 		}
-		TalDAO dao = DataAccessService.getTalDAO();
-		if (dao == null) {
-			logger.log(Level.SEVERE,
-					"There was at least one necesary DAO whose implementation couldn't be found, exiting scheduler initialization");
-			throw new InitializationException(
-					"There was at least one necesary DAO whose implementation couldn't be found");
-		}
 		// Get all the TALs and validate them
-		// TODO Check for changes (added TAL, removed, updated)
-		File talsLocation = new File(ApiConfiguration.getTalsLocation());
-		for (File tal : talsLocation.listFiles()) {
-			TrustAnchorValidationService.addTalFromFile(tal);
-		}
-		List<Tal> allTals = null;
+		TrustAnchorValidationService.runFirstValidation();
+		// And add the TAL validation Job
 		try {
-			allTals = dao.getAll(null);
-		} catch (ApiDataAccessException e) {
-			throw new InitializationException("Error fetching all TALs", e);
+			scheduler.scheduleJob(QuartzTrustAnchorValidationJob.buildJob(),
+					TriggerBuilder.newTrigger().withSchedule(
+							CronScheduleBuilder.cronSchedule(ApiConfiguration.getTrustAnchorValidationSchedule()))
+							.build());
+		} catch (SchedulerException e) {
+			throw new InitializationException("Error registering TALs validation job", e);
 		}
-		for (Tal tal : allTals) {
-			try {
-				JobDetail talValidationJob = QuartzTrustAnchorValidationJob.buildJob(tal);
-				scheduler.scheduleJob(talValidationJob,
-						TriggerBuilder.newTrigger().withSchedule(
-								CronScheduleBuilder.cronSchedule(ApiConfiguration.getTrustAnchorValidationSchedule()))
-								.build());
-				scheduler.addJob(QuartzCertificateTreeValidationJob.buildJob(tal), true);
-				logger.log(Level.INFO, "Registered TAL validation job for " + tal);
-			} catch (SchedulerException e) {
-				throw new InitializationException("Error registering TAL validation job for " + tal.toString(), e);
-			}
-		}
+
 		try {
 			scheduler.scheduleJob(QuartzRpkiRepositoryValidationJob.buildJob(),
 					TriggerBuilder.newTrigger().withSchedule(
@@ -101,51 +71,36 @@ public class MasterScheduler {
 		}
 
 		try {
-			scheduler.scheduleJob(QuartzValidationRunCleanupJob.buildJob(),
-					TriggerBuilder.newTrigger().withSchedule(
-							CronScheduleBuilder.cronSchedule(ApiConfiguration.getValidationRunCleanupSchedule()))
-							.build());
-			logger.log(Level.INFO, "Registered Validation run cleanup job");
-		} catch (SchedulerException e) {
-			throw new InitializationException("Error registering Validation run cleanup job", e);
-		}
-
-		try {
 			scheduler.start();
 		} catch (SchedulerException e) {
 			throw new InitializationException("Error starting the scheduler", e);
 		}
 	}
 
-	// TODO Isn't used, check if this will be necessary to keep it
-	public void addTrustAnchor(Tal trustAnchor) {
+	public static void addTrustAnchorJob(Long talId) throws InitializationException {
 		try {
-			scheduler.scheduleJob(QuartzTrustAnchorValidationJob.buildJob(trustAnchor), TriggerBuilder.newTrigger()
-					.startNow().withSchedule(SimpleScheduleBuilder.repeatMinutelyForever(10)).build());
-			scheduler.addJob(QuartzCertificateTreeValidationJob.buildJob(trustAnchor), true);
-		} catch (SchedulerException ex) {
-			throw new RuntimeException(ex);
+			scheduler.addJob(QuartzCertificateTreeValidationJob.buildJob(talId), true);
+			logger.log(Level.INFO, "Registered TAL validation job for ID " + talId);
+		} catch (SchedulerException e) {
+			throw new InitializationException("Error registering TAL validation job for " + talId, e);
 		}
 	}
 
-	// TODO Isn't used, check if this will be necessary to keep it
-	public void removeTrustAnchor(Tal trustAnchor) {
+	public static void removeTrustAnchorJob(Long talId) {
 		try {
-			boolean trustAnchorValidationDeleted = scheduler
-					.deleteJob(QuartzTrustAnchorValidationJob.getJobKey(trustAnchor));
 			boolean certificateTreeValidationDeleted = scheduler
-					.deleteJob(QuartzCertificateTreeValidationJob.getJobKey(trustAnchor));
-			if (!trustAnchorValidationDeleted || !certificateTreeValidationDeleted) {
-				throw new NullPointerException("validation job for trust anchor or certificate tree not found");
+					.deleteJob(QuartzCertificateTreeValidationJob.getJobKey(talId));
+			if (!certificateTreeValidationDeleted) {
+				throw new NullPointerException("validation job for certificate tree not found");
 			}
 		} catch (SchedulerException ex) {
 			throw new RuntimeException(ex);
 		}
 	}
 
-	public static void triggerCertificateTreeValidation(Tal trustAnchor) {
+	public static void triggerCertificateTreeValidation(Long talId) {
 		try {
-			scheduler.triggerJob(QuartzCertificateTreeValidationJob.getJobKey(trustAnchor));
+			scheduler.triggerJob(QuartzCertificateTreeValidationJob.getJobKey(talId));
 		} catch (SchedulerException ex) {
 			throw new RuntimeException(ex);
 		}

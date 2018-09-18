@@ -32,9 +32,7 @@ public class TalSingleResult extends ApiSingleResult<Tal> {
 		}
 		JsonObjectBuilder builder = Json.createObjectBuilder();
 		addKeyValueToBuilder(builder, "id", tal.getId(), true);
-		addKeyValueToBuilder(builder, "lastSync", tal.getLastSync(), true);
 		addKeyValueToBuilder(builder, "publicKey", tal.getPublicKey(), true);
-		addKeyValueToBuilder(builder, "syncStatus", tal.getSyncStatus(), true);
 		addKeyValueToBuilder(builder, "loadedCer", CMSUtil.getCertAsJson(tal.getLoadedCer()), true);
 		addKeyValueToBuilder(builder, "name", tal.getName(), true);
 		buildTalUris(builder, tal);

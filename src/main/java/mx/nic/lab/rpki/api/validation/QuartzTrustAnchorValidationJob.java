@@ -37,34 +37,19 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.quartz.JobKey;
 
-import mx.nic.lab.rpki.db.pojo.Tal;
-
 @DisallowConcurrentExecution
 public class QuartzTrustAnchorValidationJob implements Job {
 
-	public static final String TRUST_ANCHOR_ID_KEY = "trustAnchorId";
-
-	private long trustAnchorId;
-
 	@Override
 	public void execute(JobExecutionContext context) throws JobExecutionException {
-		TrustAnchorValidationService.validate(trustAnchorId);
+		TrustAnchorValidationService.validate();
 	}
 
-	static JobDetail buildJob(Tal trustAnchor) {
-		return JobBuilder.newJob(QuartzTrustAnchorValidationJob.class).withIdentity(getJobKey(trustAnchor))
-				.usingJobData(TRUST_ANCHOR_ID_KEY, trustAnchor.getId()).build();
+	static JobDetail buildJob() {
+		return JobBuilder.newJob(QuartzTrustAnchorValidationJob.class).withIdentity(getJobKey()).build();
 	}
 
-	static JobKey getJobKey(Tal trustAnchor) {
-		return new JobKey(String.format("%s#%d", QuartzTrustAnchorValidationJob.class.getName(), trustAnchor.getId()));
-	}
-
-	public long getTrustAnchorId() {
-		return trustAnchorId;
-	}
-
-	public void setTrustAnchorId(long trustAnchorId) {
-		this.trustAnchorId = trustAnchorId;
+	static JobKey getJobKey() {
+		return new JobKey(String.format("%s", QuartzTrustAnchorValidationJob.class.getName()));
 	}
 }

@@ -33,8 +33,6 @@ public class ApiConfiguration {
 	private static final String RPKI_REPOSITORY_VALIDATION_SCHEDULE_KEY = "rpki.repository.validation.schedule";
 	private static final String RPKI_OBJECT_CLEANUP_SCHEDULE_KEY = "rpki.object.cleanup.schedule";
 	private static final String RPKI_OBJECT_CLEANUP_INTERVAL_KEY = "rpki.object.cleanup.grace.duration";
-	private static final String VALIDATION_RUN_CLEANUP_SCHEDULE_KEY = "validation.run.cleanup.schedule";
-	private static final String VALIDATION_RUN_CLEANUP_INTERVAL_KEY = "validation.run.cleanup.grace.duration";
 
 	// Properties to configure
 	private static String serverLanguage;
@@ -45,8 +43,6 @@ public class ApiConfiguration {
 	private static String rpkiRepositoryValidationSchedule;
 	private static String rpkiObjectCleanupSchedule;
 	private static String rpkiObjectCleanupInterval;
-	private static String validationRunCleanupSchedule;
-	private static String validationRunCleanupInterval;
 
 	private ApiConfiguration() {
 		// No code
@@ -146,24 +142,6 @@ public class ApiConfiguration {
 			}
 		}
 
-		if (isPropertyNullOrEmpty(VALIDATION_RUN_CLEANUP_SCHEDULE_KEY)) {
-			invalidProperties.add(VALIDATION_RUN_CLEANUP_SCHEDULE_KEY);
-		} else {
-			validationRunCleanupSchedule = systemProperties.getProperty(VALIDATION_RUN_CLEANUP_SCHEDULE_KEY).trim();
-			if (!isValidCronExpression(validationRunCleanupSchedule, exceptions)) {
-				invalidProperties.add(VALIDATION_RUN_CLEANUP_SCHEDULE_KEY);
-			}
-		}
-
-		if (isPropertyNullOrEmpty(VALIDATION_RUN_CLEANUP_INTERVAL_KEY)) {
-			invalidProperties.add(VALIDATION_RUN_CLEANUP_INTERVAL_KEY);
-		} else {
-			validationRunCleanupInterval = systemProperties.getProperty(VALIDATION_RUN_CLEANUP_INTERVAL_KEY).trim();
-			if (!isValidDuration(validationRunCleanupInterval, exceptions)) {
-				invalidProperties.add(VALIDATION_RUN_CLEANUP_INTERVAL_KEY);
-			}
-		}
-
 		if (!invalidProperties.isEmpty()) {
 			InitializationException invalidValueException = new InitializationException(
 					"The following required properties were not found or have invalid values in configuration file : "
@@ -252,13 +230,5 @@ public class ApiConfiguration {
 
 	public static String getRpkiObjectCleanupInterval() {
 		return rpkiObjectCleanupInterval;
-	}
-
-	public static String getValidationRunCleanupSchedule() {
-		return validationRunCleanupSchedule;
-	}
-
-	public static String getValidationRunCleanupInterval() {
-		return validationRunCleanupInterval;
 	}
 }
