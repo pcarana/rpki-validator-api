@@ -148,18 +148,20 @@ public class TrustAnchorValidationService extends ValidationService {
 					loadedTal.setId(getTalDAO().create(loadedTal));
 					foundTal = loadedTal;
 					created = true;
+					talsToDelete.put(foundTal.getId(), null);
 				}
 				// If there were changes at the certificate, run validation
 				boolean certUpdated = TrustAnchorValidationService.getAndValidateCertificate(foundTal,
 						validationResult);
-				if (created) {
-					talsToDelete.put(foundTal.getId(), null);
-					MasterScheduler.addTrustAnchorJob(loadedTal.getId());
-					if (jobsLoaded) {
+				if (jobsLoaded) {
+					if (created) {
+						MasterScheduler.addTrustAnchorJob(foundTal.getId());
 						MasterScheduler.triggerRpkiRepositoryValidation();
+					} else if (certUpdated) {
+						MasterScheduler.triggerCertificateTreeValidation(foundTal.getId());
 					}
-				} else if (certUpdated && jobsLoaded) {
-					MasterScheduler.triggerCertificateTreeValidation(foundTal.getId());
+				} else {
+					MasterScheduler.addTrustAnchorJob(foundTal.getId());
 				}
 				// Exists, do not delete it
 				if (talsToDelete.containsKey(foundTal.getId())) {
