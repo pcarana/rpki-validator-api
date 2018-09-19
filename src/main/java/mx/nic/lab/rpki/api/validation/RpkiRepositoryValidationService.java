@@ -181,7 +181,7 @@ public class RpkiRepositoryValidationService extends ValidationService {
 					return FileVisitResult.CONTINUE;
 				}
 
-				logger.log(Level.INFO, "visiting " + dir);
+				logger.log(Level.FINE, "visiting " + dir);
 
 				super.preVisitDirectory(dir, attrs);
 				currentLocation = currentLocation.resolve(dir.getFileName().toString() + "/");
@@ -195,7 +195,7 @@ public class RpkiRepositoryValidationService extends ValidationService {
 					return FileVisitResult.CONTINUE;
 				}
 
-				logger.log(Level.INFO, "leaving " + dir);
+				logger.log(Level.FINE, "leaving " + dir);
 				super.postVisitDirectory(dir, exc);
 				currentLocation = currentLocation.resolve("..").normalize();
 				validationResult.setLocation(new ValidationLocation(currentLocation));
@@ -205,7 +205,7 @@ public class RpkiRepositoryValidationService extends ValidationService {
 			@Override
 			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
 				super.visitFile(file, attrs);
-
+				logger.log(Level.FINE, "at file " + file + " in location " + currentLocation);
 				validationResult
 						.setLocation(new ValidationLocation(currentLocation.resolve(file.getFileName().toString())));
 
@@ -254,7 +254,7 @@ public class RpkiRepositoryValidationService extends ValidationService {
 							return null;
 						}
 						validationRun.addRpkiObject(object);
-						logger.log(Level.INFO, "added to database " + object);
+						logger.log(Level.FINE, "added to database " + object);
 						return object;
 					}
 				});
