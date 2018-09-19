@@ -1,5 +1,7 @@
 package mx.nic.lab.rpki.api.result.tal;
 
+import java.time.Instant;
+
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
@@ -80,7 +82,8 @@ public class TalSingleResult extends ApiSingleResult<Tal> {
 			JsonObjectBuilder objBuilder = Json.createObjectBuilder();
 			addKeyValueToBuilder(objBuilder, "status", validationRun.getStatus().toString(), true);
 			addKeyValueToBuilder(objBuilder, "type", validationRun.getType().toString(), true);
-			addKeyValueToBuilder(objBuilder, "completedAt", validationRun.getCompletedAt().toString(), true);
+			Instant completedAt = validationRun.getCompletedAt();
+			addKeyValueToBuilder(objBuilder, "completedAt", completedAt != null ? completedAt.toString() : null, true);
 			buildValidationChecks(objBuilder, validationRun);
 			arrayBuilder.add(objBuilder);
 		}
