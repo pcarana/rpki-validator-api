@@ -302,15 +302,10 @@ public class CertificateTreeValidationService extends ValidationService {
 
 	private static RpkiRepository registerRepository(Tal trustAnchor, Map<URI, RpkiRepository> registeredRepositories,
 			CertificateRepositoryObjectValidationContext context) {
-		if (context.getRpkiNotifyURI() != null) {
-			return registeredRepositories.computeIfAbsent(context.getRpkiNotifyURI(), (uri) -> {
-				return loadOrCreateRepository(uri, trustAnchor);
-			});
-		} else {
-			return registeredRepositories.computeIfAbsent(context.getRepositoryURI(), (uri) -> {
-				return loadOrCreateRepository(uri, trustAnchor);
-			});
-		}
+		// Set only the rsync uri
+		return registeredRepositories.computeIfAbsent(context.getRepositoryURI(), (uri) -> {
+			return loadOrCreateRepository(uri, trustAnchor);
+		});
 	}
 
 	private static Map<URI, RpkiObject> retrieveManifestEntries(ManifestCms manifest, URI manifestUri,
