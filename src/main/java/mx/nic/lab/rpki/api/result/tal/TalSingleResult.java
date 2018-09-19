@@ -11,6 +11,7 @@ import mx.nic.lab.rpki.api.util.CMSUtil;
 import mx.nic.lab.rpki.db.pojo.Tal;
 import mx.nic.lab.rpki.db.pojo.TalUri;
 import mx.nic.lab.rpki.db.pojo.ValidationCheck;
+import mx.nic.lab.rpki.db.pojo.ValidationCheck.Status;
 import mx.nic.lab.rpki.db.pojo.ValidationRun;
 
 /**
@@ -103,22 +104,24 @@ public class TalSingleResult extends ApiSingleResult<Tal> {
 			JsonObjectBuilder checkBuilder = Json.createObjectBuilder();
 			addKeyValueToBuilder(checkBuilder, "location", validationCheck.getLocation(), true);
 			addKeyValueToBuilder(checkBuilder, "status", validationCheck.getStatus().toString(), true);
-			// Prepare the key to search it at the bundles
-			// The final value is #{key}.{status}{param0}{paramN}...
-			StringBuilder keyBuilder = new StringBuilder();
-			keyBuilder.append("#{");
-			keyBuilder.append(validationCheck.getKey());
-			keyBuilder.append(".");
-			keyBuilder.append(validationCheck.getStatus().toString().toLowerCase());
-			keyBuilder.append("}");
-			if (validationCheck.getParameters() != null) {
-				for (String parameter : validationCheck.getParameters()) {
-					if (parameter != null && !parameter.trim().isEmpty()) {
-						keyBuilder.append("{").append(parameter).append("}");
+			if (validationCheck.getStatus() != Status.PASSED) {
+				// Prepare the key to search it at the bundles
+				// The final value is #{key}.{status}{param0}{paramN}...
+				StringBuilder keyBuilder = new StringBuilder();
+				keyBuilder.append("#{");
+				keyBuilder.append(validationCheck.getKey());
+				keyBuilder.append(".");
+				keyBuilder.append(validationCheck.getStatus().toString().toLowerCase());
+				keyBuilder.append("}");
+				if (validationCheck.getParameters() != null) {
+					for (String parameter : validationCheck.getParameters()) {
+						if (parameter != null && !parameter.trim().isEmpty()) {
+							keyBuilder.append("{").append(parameter).append("}");
+						}
 					}
 				}
+				addKeyValueToBuilder(checkBuilder, "key", keyBuilder.toString(), true);
 			}
-			addKeyValueToBuilder(checkBuilder, "key", keyBuilder.toString(), true);
 			checksBuilder.add(checkBuilder);
 		}
 		builder.add("checks", checksBuilder);
