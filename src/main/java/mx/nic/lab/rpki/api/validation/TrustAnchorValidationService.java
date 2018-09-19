@@ -98,7 +98,7 @@ public class TrustAnchorValidationService extends ValidationService {
 			validationResult = loadAndValidateTals(true);
 		} catch (InitializationException e) {
 			logger.log(Level.WARNING, "Trust anchor validation failed", e);
-			validationRun.addCheck(new ValidationCheck(validationRun, validationRun.getTalCertificateURI(),
+			validationRun.addCheck(new ValidationCheck(validationRun.getId(), validationRun.getTalCertificateURI(),
 					ValidationCheck.Status.ERROR, ErrorCodes.UNHANDLED_EXCEPTION, e.toString()));
 			validationRun.setFailed();
 		}
