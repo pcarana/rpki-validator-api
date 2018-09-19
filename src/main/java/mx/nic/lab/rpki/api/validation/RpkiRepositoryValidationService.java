@@ -253,7 +253,6 @@ public class RpkiRepositoryValidationService extends ValidationService {
 							logger.log(Level.WARNING, "There was an error storing the object " + object.toString(), e);
 							return null;
 						}
-						validationRun.addRpkiObject(object);
 						logger.log(Level.FINE, "added to database " + object);
 						return object;
 					}

@@ -131,17 +131,7 @@ public class CertificateTreeValidationService extends ValidationService {
 			if (locationUri == null) {
 				return;
 			}
-
-			validationRun.getValidatedObjects().addAll(
-					validateCertificateAuthority(trustAnchor, registeredRepositories, context, validationResult));
-
-			// @pcarana FIXME DELETE ME IF NEEDED:
-			// net.ripe.rpki.validator3.domain.ValidatedRpkiObjects retrieved
-			// the validated objects and was filtering them just to consult them (apparently
-			// this
-			// isn't necessary for now, this comment is only a reference so delete it if
-			// that class
-			// [ValidatedRpkiObjects] isn't needed)
+			validateCertificateAuthority(trustAnchor, registeredRepositories, context, validationResult);
 		} finally {
 			validationRun.completeWith(validationResult);
 			logger.info("tree validation " + validationRun.getStatus() + " for " + trustAnchor);
