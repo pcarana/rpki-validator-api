@@ -34,7 +34,6 @@ import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_CRL_FO
 import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_MANIFEST_CONTAINS_ONE_CRL_ENTRY;
 import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_MANIFEST_ENTRY_FOUND;
 import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_MANIFEST_ENTRY_HASH_MATCHES;
-import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_RPKI_REPOSITORY_PENDING;
 import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_TRUST_ANCHOR_CERTIFICATE_AVAILABLE;
 import static net.ripe.rpki.commons.validation.ValidationString.VALIDATOR_TRUST_ANCHOR_CERTIFICATE_RRDP_NOTIFY_URI_OR_REPOSITORY_URI_PRESENT;
 
@@ -156,12 +155,6 @@ public class CertificateTreeValidationService extends ValidationService {
 				return validatedObjects;
 			}
 
-			temporary.warnIfTrue(rpkiRepository.isPending(), VALIDATOR_RPKI_REPOSITORY_PENDING,
-					rpkiRepository.getLocationUri());
-			if (rpkiRepository.isPending()) {
-				return validatedObjects;
-			}
-
 			X509ResourceCertificate certificate = context.getCertificate();
 			URI manifestUri = certificate.getManifestUri();
 			temporary.setLocation(new ValidationLocation(manifestUri));
@@ -169,13 +162,8 @@ public class CertificateTreeValidationService extends ValidationService {
 			Optional<RpkiObject> manifestObject = getRpkiObjectDAO()
 					.findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type.MFT, context.getSubjectKeyIdentifier());
 			if (!manifestObject.isPresent()) {
-				if (rpkiRepository.getStatus() == RpkiRepository.Status.FAILED) {
-					temporary.error(ValidationString.VALIDATOR_NO_MANIFEST_REPOSITORY_FAILED,
-							rpkiRepository.getLocationUri());
-				} else {
-					temporary.error(ValidationString.VALIDATOR_NO_LOCAL_MANIFEST_NO_MANIFEST_IN_REPOSITORY,
-							rpkiRepository.getLocationUri());
-				}
+				temporary.error(ValidationString.VALIDATOR_NO_LOCAL_MANIFEST_NO_MANIFEST_IN_REPOSITORY,
+						rpkiRepository.getLocationUri());
 			}
 
 			Optional<ManifestCms> maybeManifest = manifestObject.flatMap(x -> {
@@ -189,8 +177,7 @@ public class CertificateTreeValidationService extends ValidationService {
 			});
 
 			temporary.rejectIfTrue(
-					manifestObject.isPresent() && rpkiRepository.getStatus() == RpkiRepository.Status.FAILED
-							&& maybeManifest.isPresent() && maybeManifest.get().isPastValidityTime(),
+					manifestObject.isPresent() && maybeManifest.isPresent() && maybeManifest.get().isPastValidityTime(),
 					ValidationString.VALIDATOR_OLD_LOCAL_MANIFEST_REPOSITORY_FAILED, rpkiRepository.getLocationUri());
 
 			if (temporary.hasFailureForCurrentLocation()) {
@@ -336,7 +323,6 @@ public class CertificateTreeValidationService extends ValidationService {
 		try {
 			rpkiRepository = rpkiRepositories.findByURI(uriString).orElseGet(() -> {
 				RpkiRepository newRepository = new RpkiRepository(trustAnchor, uri.toASCIIString());
-				newRepository.setDownloaded();
 				try {
 					Long id = rpkiRepositories.create(newRepository);
 					newRepository.setId(id);

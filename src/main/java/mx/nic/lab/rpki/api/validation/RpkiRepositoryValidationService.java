@@ -139,12 +139,10 @@ public class RpkiRepositoryValidationService extends ValidationService {
 				storeObjects(targetDirectory, validationRun, validationResult, objectsBySha256, repository);
 			}
 		} catch (IOException e) {
-			repository.setFailed();
 			validationResult.error(ErrorCodes.RSYNC_REPOSITORY_IO, e.toString(), ExceptionUtils.getStackTrace(e));
 		}
 
 		affectedTrustAnchors.addAll(repository.getTrustAnchors());
-		repository.setDownloaded();
 		fetchedLocations.put(URI.create(repository.getLocationUri()), repository);
 
 		return validationResult;
@@ -157,12 +155,9 @@ public class RpkiRepositoryValidationService extends ValidationService {
 			RpkiRepository parentRepository = fetchedLocations.get(parentLocation);
 			if (parentRepository != null) {
 				repository.setParentRepository(parentRepository);
-				if (parentRepository.isDownloaded()) {
-					logger.log(Level.INFO, "Already fetched " + repository.getLocationUri() + " as part of "
-							+ parentRepository.getLocationUri() + ", skipping");
-					repository.setDownloaded(parentRepository.getLastDownloadedAt());
-					return parentRepository;
-				}
+				logger.log(Level.INFO, "Already fetched " + repository.getLocationUri() + " as part of "
+						+ parentRepository.getLocationUri() + ", skipping");
+				return parentRepository;
 			}
 		}
 		return null;
