@@ -35,39 +35,15 @@ public class MasterScheduler {
 		} catch (SchedulerException e) {
 			throw new InitializationException("The main scheduler couldn't be initialized", e);
 		}
-		// Get all the TALs and validate them
-		TrustAnchorValidationService.runFirstValidation();
-		// And add the TAL validation Job
 		try {
 			scheduler.scheduleJob(QuartzTrustAnchorValidationJob.buildJob(),
-					TriggerBuilder.newTrigger().withSchedule(
-							CronScheduleBuilder.cronSchedule(ApiConfiguration.getTrustAnchorValidationSchedule()))
+					TriggerBuilder.newTrigger()
+							.withSchedule(CronScheduleBuilder
+									.cronSchedule(ApiConfiguration.getTrustAnchorValidationSchedule())
+									.withMisfireHandlingInstructionDoNothing())
 							.build());
 		} catch (SchedulerException e) {
 			throw new InitializationException("Error registering TALs validation job", e);
-		}
-
-		try {
-			scheduler.scheduleJob(QuartzRpkiRepositoryValidationJob.buildJob(),
-					TriggerBuilder.newTrigger().withSchedule(
-							CronScheduleBuilder.cronSchedule(ApiConfiguration.getRpkiRepositoryValidationSchedule()))
-							.build());
-			logger.log(Level.INFO, "Registered RPKI repository validation job");
-			// Trigger repository validation
-			triggerRpkiRepositoryValidation();
-		} catch (SchedulerException e) {
-			throw new InitializationException("Error registering RPKI repository validation job", e);
-		}
-
-		try {
-			scheduler.scheduleJob(QuartzRpkiObjectCleanupJob.buildJob(),
-					TriggerBuilder.newTrigger()
-							.withSchedule(
-									CronScheduleBuilder.cronSchedule(ApiConfiguration.getRpkiObjectCleanupSchedule()))
-							.build());
-			logger.log(Level.INFO, "Registered RPKI object cleanup job");
-		} catch (SchedulerException e) {
-			throw new InitializationException("Error registering RPKI object cleanup job", e);
 		}
 
 		try {
@@ -75,42 +51,12 @@ public class MasterScheduler {
 		} catch (SchedulerException e) {
 			throw new InitializationException("Error starting the scheduler", e);
 		}
-	}
 
-	public static void addTrustAnchorJob(Long talId) throws InitializationException {
+		// Get all the TALs and validate them
 		try {
-			scheduler.addJob(QuartzCertificateTreeValidationJob.buildJob(talId), true);
-			logger.log(Level.INFO, "Registered TAL validation job for ID " + talId);
+			scheduler.triggerJob(QuartzTrustAnchorValidationJob.getJobKey());
 		} catch (SchedulerException e) {
-			throw new InitializationException("Error registering TAL validation job for " + talId, e);
-		}
-	}
-
-	public static void removeTrustAnchorJob(Long talId) {
-		try {
-			boolean certificateTreeValidationDeleted = scheduler
-					.deleteJob(QuartzCertificateTreeValidationJob.getJobKey(talId));
-			if (!certificateTreeValidationDeleted) {
-				throw new NullPointerException("validation job for certificate tree not found");
-			}
-		} catch (SchedulerException ex) {
-			throw new RuntimeException(ex);
-		}
-	}
-
-	public static void triggerCertificateTreeValidation(Long talId) {
-		try {
-			scheduler.triggerJob(QuartzCertificateTreeValidationJob.getJobKey(talId));
-		} catch (SchedulerException ex) {
-			throw new RuntimeException(ex);
-		}
-	}
-
-	public static void triggerRpkiRepositoryValidation() {
-		try {
-			scheduler.triggerJob(QuartzRpkiRepositoryValidationJob.getJobKey());
-		} catch (SchedulerException ex) {
-			throw new RuntimeException(ex);
+			throw new InitializationException("Error running the initial validation", e);
 		}
 	}
 
