@@ -37,7 +37,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -70,55 +69,31 @@ public class RpkiRepositoryValidationService extends ValidationService {
 		// No code
 	}
 
-	public static void validateRsyncRepositories() {
-		Instant cutoffTime = Instant.now().minus(getRsyncRepositoryDownloadInterval());
-		logger.info("updating all rsync repositories that have not been downloaded since " + cutoffTime);
+	public static void validateRsyncRepositories(Long talId, ValidationRun validationRun) {
+		logger.log(Level.INFO, "Validating repositories related to TAL " + talId);
 		Set<Tal> affectedTrustAnchors = new HashSet<>();
-		ValidationRun validationRun = new ValidationRun(ValidationRun.Type.RPKI_REPOSITORY);
-		// Create validation run with initial status (running)
-		try {
-			validationRun.setId(getValidationRunDAO().create(validationRun));
-		} catch (ApiDataAccessException e) {
-			logger.log(Level.SEVERE, "Error persisting validation run " + validationRun.toString(), e);
-			return;
-		}
 		final Map<String, RpkiObject> objectsBySha256 = new HashMap<>();
 		final Map<URI, RpkiRepository> fetchedLocations = new HashMap<>();
 		Stream<RpkiRepository> repositories = null;
 		try {
-			repositories = getRpkiRepositoryDAO().findRsyncRepositories();
+			repositories = getRpkiRepositoryDAO().findRsyncRepositories(talId);
 		} catch (ApiDataAccessException e) {
 			logger.log(Level.WARNING, "There was an error getting the repositories, exiting repository validation", e);
 			return;
 		}
-		ValidationResult results = repositories
-				/*
-				 * TODO Maybe this wont be needed .filter((repository) -> { /* boolean
-				 * needsUpdate = repository.isPending() || repository.getLastDownloadedAt() ==
-				 * null || repository.getLastDownloadedAt().isBefore(cutoffTime); if
-				 * (!needsUpdate) {
-				 * 
-				 * //fetchedLocations.put(URI.create(repository.getLocationUri()), repository);
-				 * return true; /* } return needsUpdate;
-				 * 
-				 * })
-				 */.map((repository) -> processRsyncRepository(affectedTrustAnchors, validationRun, fetchedLocations,
-						objectsBySha256, repository))
+		ValidationResult results = repositories.map((repository) -> processRsyncRepository(affectedTrustAnchors,
+				validationRun, fetchedLocations, objectsBySha256, repository))
 				.collect(() -> ValidationResult.withLocation("placeholder"), ValidationResult::addAll,
 						ValidationResult::addAll);
 
 		validationRun.completeWith(results);
 		affectedTrustAnchors.forEach((trustAnchor) -> {
-			MasterScheduler.triggerCertificateTreeValidation(trustAnchor.getId());
+			CertificateTreeValidationService.validate(trustAnchor.getId(), validationRun);
 		});
-		try {
-			getValidationRunDAO().completeValidation(validationRun);
-		} catch (ApiDataAccessException e) {
-			logger.log(Level.SEVERE, "There was an error updating the RPKI repository validation run", e);
-		}
 
 		// Log Info about the validation
-		logger.log(Level.INFO, "Finish RPKI Repository validationRun " + validationRun.toString());
+		logger.log(Level.INFO, "Finish RPKI Repository validationRun " + validationRun.getId() + " for TAL "
+				+ validationRun.getTalId());
 	}
 
 	private static ValidationResult processRsyncRepository(Set<Tal> affectedTrustAnchors, ValidationRun validationRun,
@@ -136,7 +111,15 @@ public class RpkiRepositoryValidationService extends ValidationService {
 			RpkiRepository parentRepository = findDownloadedParentRepository(fetchedLocations, repository);
 			if (parentRepository == null) {
 				logger.log(Level.INFO, "Storing object downloaded for " + repository.getLocationUri());
-				storeObjects(targetDirectory, validationRun, validationResult, objectsBySha256, repository);
+				Set<RpkiObject> createObjects = new HashSet<>();
+				storeObjects(targetDirectory, validationRun, validationResult, objectsBySha256, createObjects,
+						repository);
+				// Persist the objects
+				try {
+					getRpkiObjectDAO().bulkCreate(createObjects);
+				} catch (ApiDataAccessException e) {
+					logger.log(Level.SEVERE, "There was an error storing an RPKI object", e);
+				}
 			}
 		} catch (IOException e) {
 			validationResult.error(ErrorCodes.RSYNC_REPOSITORY_IO, e.toString(), ExceptionUtils.getStackTrace(e));
@@ -164,8 +147,8 @@ public class RpkiRepositoryValidationService extends ValidationService {
 	}
 
 	private static void storeObjects(File targetDirectory, ValidationRun validationRun,
-			ValidationResult validationResult, Map<String, RpkiObject> objectsBySha256, RpkiRepository repository)
-			throws IOException {
+			ValidationResult validationResult, Map<String, RpkiObject> objectsBySha256, Set<RpkiObject> createObjects,
+			RpkiRepository repository) throws IOException {
 		Files.walkFileTree(targetDirectory.toPath(), new SimpleFileVisitor<Path>() {
 			private URI currentLocation = URI.create(repository.getLocationUri());
 			private Long rpkiRepositoryId = repository.getId();
@@ -242,13 +225,7 @@ public class RpkiRepositoryValidationService extends ValidationService {
 
 						RpkiObject object = new RpkiObject(validationResult.getCurrentLocation().getName(),
 								rpkiRepositoryId, obj);
-						try {
-							object.setId(getRpkiObjectDAO().create(object));
-						} catch (ApiDataAccessException e) {
-							logger.log(Level.WARNING, "There was an error storing the object " + object.toString(), e);
-							return null;
-						}
-						logger.log(Level.FINE, "added to database " + object);
+						createObjects.add(object);
 						return object;
 					}
 				});

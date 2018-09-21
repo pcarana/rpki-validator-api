@@ -49,13 +49,11 @@ import mx.nic.lab.rpki.db.exception.ErrorCodes;
 import mx.nic.lab.rpki.db.exception.InitializationException;
 import mx.nic.lab.rpki.db.pojo.RpkiObject;
 import mx.nic.lab.rpki.db.pojo.Tal;
-import mx.nic.lab.rpki.db.pojo.ValidationCheck;
 import mx.nic.lab.rpki.db.pojo.ValidationRun;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
 import net.ripe.rpki.commons.crypto.util.CertificateRepositoryObjectFactory;
 import net.ripe.rpki.commons.crypto.x509cert.X509CertificateUtil;
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate;
-import net.ripe.rpki.commons.validation.ValidationLocation;
 import net.ripe.rpki.commons.validation.ValidationResult;
 import net.ripe.rpki.commons.validation.objectvalidators.CertificateRepositoryObjectValidationContext;
 
@@ -68,48 +66,14 @@ public class TrustAnchorValidationService extends ValidationService {
 	}
 
 	/**
-	 * Run the first validation of the TALs
-	 * 
-	 * @throws InitializationException
-	 */
-	public static void runFirstValidation() throws InitializationException {
-		ValidationResult validationResult = loadAndValidateTals(false);
-		if (validationResult.hasFailures()) {
-			throw new InitializationException(
-					"Initial validation of TALs threw some errors: " + validationResult.toString());
-		}
-	}
-
-	/**
-	 * Run the TAL validation, this must used by recurrent calls, when the Jobs are
-	 * already configured
+	 * Run the TAL validation, this must used by recurrent calls
 	 */
 	public static void validate() {
-		ValidationRun validationRun = new ValidationRun(ValidationRun.Type.TRUST_ANCHOR);
-		// Create validation run with initial status (running)
 		try {
-			validationRun.setId(getValidationRunDAO().create(validationRun));
-		} catch (ApiDataAccessException e) {
-			logger.log(Level.SEVERE, "Error persisting validation run " + validationRun.toString(), e);
-			return;
-		}
-		ValidationResult validationResult = null;
-		try {
-			validationResult = loadAndValidateTals(true);
+			loadAndValidateTals();
 		} catch (InitializationException e) {
-			logger.log(Level.WARNING, "Trust anchor validation failed", e);
-			validationRun.addCheck(new ValidationCheck(validationRun.getId(), validationRun.getTalCertificateURI(),
-					ValidationCheck.Status.ERROR, ErrorCodes.UNHANDLED_EXCEPTION, e.toString()));
-			validationRun.setFailed();
+			logger.log(Level.SEVERE, "Trust anchor validation failed", e);
 		}
-		validationRun.completeWith(validationResult);
-		try {
-			getValidationRunDAO().completeValidation(validationRun);
-		} catch (ApiDataAccessException e) {
-			logger.log(Level.SEVERE, "There was an error updating the TAL validation run " + validationRun.toString(),
-					e);
-		}
-
 	}
 
 	/**
@@ -117,15 +81,9 @@ public class TrustAnchorValidationService extends ValidationService {
 	 * if the files and the DB are synchronized to take actions (add, delete, update
 	 * the TAL).
 	 * 
-	 * @param jobsLoaded
-	 *            To indicate if the main Jobs are allready configured, its expected
-	 *            that when the application is loaded this flag has a
-	 *            <code>false</code> value
-	 * @return {@link ValidationResult} of the task
 	 * @throws InitializationException
 	 */
-	private static ValidationResult loadAndValidateTals(boolean jobsLoaded) throws InitializationException {
-		ValidationResult validationResult = ValidationResult.withLocation(getTalsLocation().getPath());
+	private static void loadAndValidateTals() throws InitializationException {
 		File talsLocation = getTalsLocation();
 		Map<Long, Tal> talsToDelete = new HashMap<>();
 		try {
@@ -140,32 +98,43 @@ public class TrustAnchorValidationService extends ValidationService {
 				continue;
 			}
 			try {
-				boolean created = false;
 				Tal loadedTal = Util.loadTalfromFile(talFile);
 				Tal foundTal = getTalDAO().getExistentTal(loadedTal);
 				if (foundTal == null) {
 					// Doesn't exists, create
 					loadedTal.setId(getTalDAO().create(loadedTal));
 					foundTal = loadedTal;
-					created = true;
 					talsToDelete.put(foundTal.getId(), null);
 				}
 				// If there were changes at the certificate, run validation
-				boolean certUpdated = TrustAnchorValidationService.getAndValidateCertificate(foundTal,
-						validationResult);
-				if (jobsLoaded) {
-					if (created) {
-						MasterScheduler.addTrustAnchorJob(foundTal.getId());
-						MasterScheduler.triggerRpkiRepositoryValidation();
-					} else if (certUpdated) {
-						MasterScheduler.triggerCertificateTreeValidation(foundTal.getId());
-					}
-				} else {
-					MasterScheduler.addTrustAnchorJob(foundTal.getId());
-				}
+				ValidationResult validationResult = ValidationResult
+						.withLocation(foundTal.getTalUris().get(0).getLocation());
+				getAndValidateCertificate(foundTal, validationResult);
 				// Exists, do not delete it
 				if (talsToDelete.containsKey(foundTal.getId())) {
 					talsToDelete.put(foundTal.getId(), null);
+
+					// Create validation run with initial status (running)
+					logger.log(Level.INFO, "Start TAL validation for " + foundTal.getId() + " file " + talFile);
+					ValidationRun validationRun = new ValidationRun(ValidationRun.Type.TRUST_ANCHOR);
+					validationRun.setTalId(foundTal.getId());
+					try {
+						validationRun.setId(getValidationRunDAO().create(validationRun));
+					} catch (ApiDataAccessException e) {
+						logger.log(Level.SEVERE, "Error persisting validation run " + validationRun.toString(), e);
+						continue;
+					}
+
+					RpkiRepositoryValidationService.validateRsyncRepositories(foundTal.getId(), validationRun);
+
+					validationRun.completeWith(validationResult);
+					try {
+						getValidationRunDAO().completeValidation(validationRun);
+					} catch (ApiDataAccessException e) {
+						logger.log(Level.SEVERE,
+								"There was an error updating the TAL validation run " + validationRun.toString(), e);
+					}
+					logger.log(Level.INFO, "Complete TAL validation for " + foundTal.getId() + " file " + talFile);
 				}
 			} catch (TrustAnchorExtractorException e) {
 				throw new InitializationException("Error loading tal from file " + talFile, e);
@@ -175,9 +144,6 @@ public class TrustAnchorValidationService extends ValidationService {
 		}
 		for (Long talId : talsToDelete.keySet()) {
 			if (talsToDelete.get(talId) != null) {
-				if (jobsLoaded) {
-					MasterScheduler.removeTrustAnchorJob(talId);
-				}
 				try {
 					getTalDAO().delete(talsToDelete.get(talId));
 				} catch (ApiDataAccessException e) {
@@ -185,7 +151,8 @@ public class TrustAnchorValidationService extends ValidationService {
 				}
 			}
 		}
-		return validationResult;
+		// And cleanup the old RPKI objects
+		RpkiObjectCleanupService.cleanupRpkiObjects();
 	}
 
 	/**
@@ -200,7 +167,6 @@ public class TrustAnchorValidationService extends ValidationService {
 	private static boolean getAndValidateCertificate(Tal tal, ValidationResult validationResult) {
 		boolean updated = false;
 		URI cerUri = URI.create(tal.getTalUris().get(0).getLocation());
-		validationResult = validationResult.setLocation(new ValidationLocation(cerUri));
 		try {
 			File targetFile = RsyncUtils.localFileFromRsyncUri(getLocalRsyncStorageDirectory(), cerUri);
 			long trustAnchorCertificateSize = targetFile.length();

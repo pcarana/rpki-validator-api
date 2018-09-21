@@ -82,7 +82,7 @@ public class CertificateTreeValidationService extends ValidationService {
 		// No code
 	}
 
-	public static void validate(long trustAnchorId) {
+	public static void validate(long trustAnchorId, ValidationRun validationRun) {
 		Map<URI, RpkiRepository> registeredRepositories = new HashMap<>();
 
 		Tal trustAnchor;
@@ -96,18 +96,9 @@ public class CertificateTreeValidationService extends ValidationService {
 			logger.warning("The TAL with ID " + trustAnchorId + " doesn't exist, exiting from validation");
 			return;
 		}
-		logger.info("starting tree validation for " + trustAnchor.getName() + " with id " + trustAnchorId);
+		logger.log(Level.INFO, "starting tree validation for " + trustAnchor.getName() + " with id " + trustAnchorId);
 
 		String trustAnchorLocation = trustAnchor.getTalUris().get(0).getLocation();
-		ValidationRun validationRun = new ValidationRun(ValidationRun.Type.CERTIFICATE_TREE, trustAnchorId,
-				trustAnchorLocation);
-		// Create validation run with initial status (running)
-		try {
-			validationRun.setId(getValidationRunDAO().create(validationRun));
-		} catch (ApiDataAccessException e) {
-			logger.log(Level.SEVERE, "Error persisting validation run " + validationRun.toString(), e);
-			return;
-		}
 		ValidationResult validationResult = ValidationResult.withLocation(trustAnchorLocation);
 		try {
 			X509ResourceCertificate certificate = trustAnchor.getCertificate();
@@ -134,11 +125,6 @@ public class CertificateTreeValidationService extends ValidationService {
 		} finally {
 			validationRun.completeWith(validationResult);
 			logger.info("tree validation " + validationRun.getStatus() + " for " + trustAnchor);
-		}
-		try {
-			getValidationRunDAO().completeValidation(validationRun);
-		} catch (ApiDataAccessException e) {
-			logger.log(Level.SEVERE, "There was an error updating the validation run", e);
 		}
 	}
 
@@ -340,10 +326,6 @@ public class CertificateTreeValidationService extends ValidationService {
 		RpkiRepository parentRepository = findRsyncParentRepository(uri);
 		if (parentRepository != null) {
 			rpkiRepository.setParentRepository(parentRepository);
-			// TODO Is it really necessary?
-			// if (parentRepository.isDownloaded()) {
-			// rpkiRepository.setDownloaded(parentRepository.getLastDownloadedAt());
-			// }
 			try {
 				rpkiRepositories.updateParentRepository(rpkiRepository);
 			} catch (ApiDataAccessException e) {

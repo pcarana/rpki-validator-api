@@ -25,7 +25,6 @@ public class ValidationService {
 	private static ValidationRunDAO validationRunDAO;
 
 	private static Duration rpkiObjectCleanupGrace;
-	private static Duration rsyncRepositoryDownloadInterval;
 	private static File localRsyncStorageDirectory;
 	private static File talsLocation;
 
@@ -61,11 +60,6 @@ public class ValidationService {
 		} catch (DateTimeParseException e) {
 			throw new InitializationException("Error parsing the rpkiObjectCleanupGrace", e);
 		}
-		try {
-			rsyncRepositoryDownloadInterval = Duration.parse(ApiConfiguration.getRsyncDownloadInterval());
-		} catch (DateTimeParseException e) {
-			throw new InitializationException("Error parsing the rsyncRepositoryDownloadInterval", e);
-		}
 		localRsyncStorageDirectory = new File(ApiConfiguration.getDownloadedRepositoriesLocation());
 		talsLocation = new File(ApiConfiguration.getTalsLocation());
 	}
@@ -88,10 +82,6 @@ public class ValidationService {
 
 	public static Duration getRpkiObjectCleanupGrace() {
 		return rpkiObjectCleanupGrace;
-	}
-
-	public static Duration getRsyncRepositoryDownloadInterval() {
-		return rsyncRepositoryDownloadInterval;
 	}
 
 	public static File getLocalRsyncStorageDirectory() {

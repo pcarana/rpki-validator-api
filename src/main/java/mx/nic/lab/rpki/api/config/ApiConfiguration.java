@@ -28,20 +28,14 @@ public class ApiConfiguration {
 	private static final String LANGUAGE_KEY = "language";
 	private static final String DOWNLOADED_REPO_LOCATION_KEY = "downloaded.repositories.location";
 	private static final String TALS_LOCATION_KEY = "tals.location";
-	private static final String RSYNC_DOWNLOAD_INTERVAL_KEY = "rsync.repository.download.interval";
 	private static final String TRUST_ANCHOR_VALIDATION_SCHEDULE_KEY = "trust.anchor.validation.schedule";
-	private static final String RPKI_REPOSITORY_VALIDATION_SCHEDULE_KEY = "rpki.repository.validation.schedule";
-	private static final String RPKI_OBJECT_CLEANUP_SCHEDULE_KEY = "rpki.object.cleanup.schedule";
 	private static final String RPKI_OBJECT_CLEANUP_INTERVAL_KEY = "rpki.object.cleanup.grace.duration";
 
 	// Properties to configure
 	private static String serverLanguage;
 	private static String downloadedRepositoriesLocation;
 	private static String talsLocation;
-	private static String rsyncDownloadInterval;
 	private static String trustAnchorValidationSchedule;
-	private static String rpkiRepositoryValidationSchedule;
-	private static String rpkiObjectCleanupSchedule;
 	private static String rpkiObjectCleanupInterval;
 
 	private ApiConfiguration() {
@@ -96,40 +90,12 @@ public class ApiConfiguration {
 			}
 		}
 
-		if (isPropertyNullOrEmpty(RSYNC_DOWNLOAD_INTERVAL_KEY)) {
-			invalidProperties.add(RSYNC_DOWNLOAD_INTERVAL_KEY);
-		} else {
-			rsyncDownloadInterval = systemProperties.getProperty(RSYNC_DOWNLOAD_INTERVAL_KEY).trim();
-			if (!isValidDuration(rsyncDownloadInterval, exceptions)) {
-				invalidProperties.add(RSYNC_DOWNLOAD_INTERVAL_KEY);
-			}
-		}
-
 		if (isPropertyNullOrEmpty(TRUST_ANCHOR_VALIDATION_SCHEDULE_KEY)) {
 			invalidProperties.add(TRUST_ANCHOR_VALIDATION_SCHEDULE_KEY);
 		} else {
 			trustAnchorValidationSchedule = systemProperties.getProperty(TRUST_ANCHOR_VALIDATION_SCHEDULE_KEY).trim();
 			if (!isValidCronExpression(trustAnchorValidationSchedule, exceptions)) {
 				invalidProperties.add(TRUST_ANCHOR_VALIDATION_SCHEDULE_KEY);
-			}
-		}
-
-		if (isPropertyNullOrEmpty(RPKI_REPOSITORY_VALIDATION_SCHEDULE_KEY)) {
-			invalidProperties.add(RPKI_REPOSITORY_VALIDATION_SCHEDULE_KEY);
-		} else {
-			rpkiRepositoryValidationSchedule = systemProperties.getProperty(RPKI_REPOSITORY_VALIDATION_SCHEDULE_KEY)
-					.trim();
-			if (!isValidCronExpression(rpkiRepositoryValidationSchedule, exceptions)) {
-				invalidProperties.add(RPKI_REPOSITORY_VALIDATION_SCHEDULE_KEY);
-			}
-		}
-
-		if (isPropertyNullOrEmpty(RPKI_OBJECT_CLEANUP_SCHEDULE_KEY)) {
-			invalidProperties.add(RPKI_OBJECT_CLEANUP_SCHEDULE_KEY);
-		} else {
-			rpkiObjectCleanupSchedule = systemProperties.getProperty(RPKI_OBJECT_CLEANUP_SCHEDULE_KEY).trim();
-			if (!isValidCronExpression(rpkiObjectCleanupSchedule, exceptions)) {
-				invalidProperties.add(RPKI_OBJECT_CLEANUP_SCHEDULE_KEY);
 			}
 		}
 
@@ -212,20 +178,8 @@ public class ApiConfiguration {
 		return talsLocation;
 	}
 
-	public static String getRsyncDownloadInterval() {
-		return rsyncDownloadInterval;
-	}
-
 	public static String getTrustAnchorValidationSchedule() {
 		return trustAnchorValidationSchedule;
-	}
-
-	public static String getRpkiRepositoryValidationSchedule() {
-		return rpkiRepositoryValidationSchedule;
-	}
-
-	public static String getRpkiObjectCleanupSchedule() {
-		return rpkiObjectCleanupSchedule;
 	}
 
 	public static String getRpkiObjectCleanupInterval() {
