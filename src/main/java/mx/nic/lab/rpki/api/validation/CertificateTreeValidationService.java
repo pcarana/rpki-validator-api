@@ -226,9 +226,7 @@ public class CertificateTreeValidationService extends ValidationService {
 					maybeCertificateRepositoryObject = getRpkiObjectDAO().findCertificateRepositoryObject(obj.getId(),
 							CertificateRepositoryObject.class, temporary);
 				} catch (ApiDataAccessException e) {
-					// TODO @pcarana Test behavior at this scenario
-					logger.log(Level.SEVERE, e.getMessage(), e);
-					temporary.error(ValidationString.VALIDATOR_OBJECT_PROCESSING_EXCEPTION);
+					temporary.error(ValidationString.VALIDATOR_OBJECT_PROCESSING_EXCEPTION, location.toASCIIString());
 				}
 				if (temporary.hasFailureForCurrentLocation()) {
 					return;
