@@ -98,35 +98,49 @@ public class TalSingleResult extends ApiSingleResult<Tal> {
 	 * @param validationRun
 	 */
 	protected void buildValidationChecks(JsonObjectBuilder builder, ValidationRun validationRun) {
-		if (validationRun.getValidationChecks() == null || validationRun.getValidationChecks().isEmpty()) {
-			builder.add("checks", JsonObject.EMPTY_JSON_ARRAY);
-			return;
-		}
-		JsonArrayBuilder checksBuilder = Json.createArrayBuilder();
-		for (ValidationCheck validationCheck : validationRun.getValidationChecks()) {
-			JsonObjectBuilder checkBuilder = Json.createObjectBuilder();
-			addKeyValueToBuilder(checkBuilder, "location", validationCheck.getLocation(), true);
-			addKeyValueToBuilder(checkBuilder, "status", validationCheck.getStatus().toString(), true);
-			if (validationCheck.getStatus() != Status.PASSED) {
-				// Prepare the key to search it at the bundles
-				// The final value is #{key}.{status}{param0}{paramN}...
-				StringBuilder keyBuilder = new StringBuilder();
-				keyBuilder.append("#{");
-				keyBuilder.append(validationCheck.getKey());
-				keyBuilder.append(".");
-				keyBuilder.append(validationCheck.getStatus().toString().toLowerCase());
-				keyBuilder.append("}");
-				if (validationCheck.getParameters() != null) {
-					for (String parameter : validationCheck.getParameters()) {
-						if (parameter != null && !parameter.trim().isEmpty()) {
-							keyBuilder.append("{").append(parameter).append("}");
+		JsonObjectBuilder checksBuilder = Json.createObjectBuilder();
+		JsonArrayBuilder errorBuilder = Json.createArrayBuilder();
+		JsonArrayBuilder warningBuilder = Json.createArrayBuilder();
+		JsonArrayBuilder passedBuilder = Json.createArrayBuilder();
+		if (validationRun.getValidationChecks() != null && !validationRun.getValidationChecks().isEmpty()) {
+			for (ValidationCheck validationCheck : validationRun.getValidationChecks()) {
+				JsonObjectBuilder checkBuilder = Json.createObjectBuilder();
+				addKeyValueToBuilder(checkBuilder, "location", validationCheck.getLocation(), true);
+				if (validationCheck.getStatus() != Status.PASSED) {
+					// Prepare the key to search it at the bundles
+					// The final value is #{key}.{status}{param0}{paramN}...
+					StringBuilder keyBuilder = new StringBuilder();
+					keyBuilder.append("#{");
+					keyBuilder.append(validationCheck.getKey());
+					keyBuilder.append(".");
+					keyBuilder.append(validationCheck.getStatus().toString().toLowerCase());
+					keyBuilder.append("}");
+					if (validationCheck.getParameters() != null) {
+						for (String parameter : validationCheck.getParameters()) {
+							if (parameter != null && !parameter.trim().isEmpty()) {
+								keyBuilder.append("{").append(parameter).append("}");
+							}
 						}
 					}
+					addKeyValueToBuilder(checkBuilder, "key", keyBuilder.toString(), true);
+					switch (validationCheck.getStatus()) {
+					case ERROR:
+						errorBuilder.add(checkBuilder);
+						break;
+					case WARNING:
+						warningBuilder.add(checkBuilder);
+						break;
+					default:
+						break;
+					}
+				} else {
+					passedBuilder.add(checkBuilder);
 				}
-				addKeyValueToBuilder(checkBuilder, "key", keyBuilder.toString(), true);
 			}
-			checksBuilder.add(checkBuilder);
 		}
+		checksBuilder.add("error", errorBuilder);
+		checksBuilder.add("warning", warningBuilder);
+		checksBuilder.add("passed", passedBuilder);
 		builder.add("checks", checksBuilder);
 	}
 }
