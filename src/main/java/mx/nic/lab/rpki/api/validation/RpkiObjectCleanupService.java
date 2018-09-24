@@ -30,7 +30,9 @@
 package mx.nic.lab.rpki.api.validation;
 
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -56,16 +58,23 @@ public class RpkiObjectCleanupService extends ValidationService {
 	 */
 	public static long cleanupRpkiObjects() {
 		Instant now = Instant.now();
+		Set<RpkiObject> reachedObjects = new HashSet<>();
 		try {
 			for (Tal trustAnchor : getTalDAO().getAll(null)) {
 				logger.info("tracing objects for trust anchor " + trustAnchor);
 				X509ResourceCertificate resourceCertificate = trustAnchor.getCertificate();
 				if (resourceCertificate != null) {
-					traceCertificateAuthority(now, resourceCertificate);
+					traceCertificateAuthority(now, resourceCertificate, reachedObjects);
 				}
 			}
 		} catch (ApiDataAccessException e) {
 			logger.log(Level.SEVERE, "There was an error getting the TALs, exiting cleanup", e);
+			return -1L;
+		}
+		try {
+			getRpkiObjectDAO().updateReachedObjects(reachedObjects);
+		} catch (ApiDataAccessException e) {
+			logger.log(Level.SEVERE, "There was an error updating the reached objects, exiting cleanup", e);
 			return -1L;
 		}
 
@@ -85,20 +94,21 @@ public class RpkiObjectCleanupService extends ValidationService {
 		return count;
 	}
 
-	private static void traceCertificateAuthority(Instant now, X509ResourceCertificate resourceCertificate)
-			throws ApiDataAccessException {
+	private static void traceCertificateAuthority(Instant now, X509ResourceCertificate resourceCertificate,
+			Set<RpkiObject> reachedObjects) throws ApiDataAccessException {
 		if (resourceCertificate == null || resourceCertificate.getManifestUri() == null) {
 			return;
 		}
 
-		Optional<RpkiObject> maybeManifest = getRpkiObjectDAO().findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type.MFT,
-				resourceCertificate.getSubjectKeyIdentifier());
+		Optional<RpkiObject> maybeManifest = getRpkiObjectDAO().findLatestByTypeAndAuthorityKeyIdentifier(
+				RpkiObject.Type.MFT, resourceCertificate.getSubjectKeyIdentifier());
 		maybeManifest.ifPresent(manifest -> {
-			markAndTraceObject(now, "manifest.mft", manifest);
+			markAndTraceObject(now, "manifest.mft", manifest, reachedObjects);
 		});
 	}
 
-	private static void markAndTraceObject(Instant now, String name, RpkiObject rpkiObject) {
+	private static void markAndTraceObject(Instant now, String name, RpkiObject rpkiObject,
+			Set<RpkiObject> reachedObjects) {
 		// Compare object instance identity to see if we've already visited
 		// the `rpkiObject` in the current run.
 		if (now == rpkiObject.getLastMarkedReachableAt()) {
@@ -106,25 +116,26 @@ public class RpkiObjectCleanupService extends ValidationService {
 		}
 
 		rpkiObject.markReachable(now);
+		reachedObjects.add(rpkiObject);
 		switch (rpkiObject.getType()) {
 		case MFT:
-			traceManifest(now, name, rpkiObject);
+			traceManifest(now, name, rpkiObject, reachedObjects);
 			break;
 		case CER:
-			traceCaCertificate(now, name, rpkiObject);
+			traceCaCertificate(now, name, rpkiObject, reachedObjects);
 			break;
 		default:
 			break;
 		}
 	}
 
-	private static void traceManifest(Instant now, String name, RpkiObject manifest) {
+	private static void traceManifest(Instant now, String name, RpkiObject manifest, Set<RpkiObject> reachedObjects) {
 		try {
 			getRpkiObjectDAO().findCertificateRepositoryObject(manifest.getId(), ManifestCms.class,
 					ValidationResult.withLocation(name)).ifPresent(manifestCms -> {
 						try {
 							getRpkiObjectDAO().findObjectsInManifest(manifestCms).forEach((entry, rpkiObject) -> {
-								markAndTraceObject(now, entry, rpkiObject);
+								markAndTraceObject(now, entry, rpkiObject, reachedObjects);
 							});
 						} catch (ApiDataAccessException e) {
 							logger.log(Level.WARNING,
@@ -136,13 +147,14 @@ public class RpkiObjectCleanupService extends ValidationService {
 		}
 	}
 
-	private static void traceCaCertificate(Instant now, String name, RpkiObject caCertificate) {
+	private static void traceCaCertificate(Instant now, String name, RpkiObject caCertificate,
+			Set<RpkiObject> reachedObjects) {
 		try {
 			getRpkiObjectDAO().findCertificateRepositoryObject(caCertificate.getId(), X509ResourceCertificate.class,
 					ValidationResult.withLocation(name)).ifPresent(certificate -> {
 						if (certificate.isCa() && certificate.getManifestUri() != null) {
 							try {
-								traceCertificateAuthority(now, certificate);
+								traceCertificateAuthority(now, certificate, reachedObjects);
 							} catch (ApiDataAccessException e) {
 								logger.log(Level.WARNING, "There was an error tracing the cert authority for " + name,
 										e);
