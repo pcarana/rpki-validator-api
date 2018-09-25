@@ -17,6 +17,8 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.bouncycastle.util.encoders.Hex;
+
 import mx.nic.lab.rpki.api.exception.BadRequestException;
 import mx.nic.lab.rpki.api.exception.ConflictException;
 import mx.nic.lab.rpki.api.exception.HttpException;
@@ -318,8 +320,11 @@ public class SlurmBgpsecIdServlet extends SlurmBgpsecServlet {
 		// value
 		if (slurmBgpsec.getSki() != null && !slurmBgpsec.getSki().trim().isEmpty()) {
 			try {
-				byte[] decodedSki = Base64.getUrlDecoder().decode(slurmBgpsec.getSki());
-				if (!CMSUtil.isValidSubjectKeyIdentifier(decodedSki)) {
+				byte[] decodedSki = Base64.getUrlDecoder().decode(slurmBgpsec.getSki().getBytes());
+				byte[] hexBytes = Hex.decode(decodedSki);
+				// Is the 160-bit SHA-1 hash (RFC 8416 section 3.3.2 citing RFC 6487 section
+				// 4.8.2)
+				if (hexBytes.length != 20) {
 					throw new BadRequestException("#{error.slurm.bgpsec.skiInvalid}");
 				}
 			} catch (IllegalArgumentException e) {
@@ -329,7 +334,7 @@ public class SlurmBgpsecIdServlet extends SlurmBgpsecServlet {
 
 		if (slurmBgpsec.getRouterPublicKey() != null && !slurmBgpsec.getRouterPublicKey().trim().isEmpty()) {
 			try {
-				byte[] decodedPk = Base64.getUrlDecoder().decode(slurmBgpsec.getRouterPublicKey());
+				byte[] decodedPk = Base64.getUrlDecoder().decode(slurmBgpsec.getRouterPublicKey().getBytes());
 				if (!CMSUtil.isValidSubjectPublicKey(decodedPk)) {
 					throw new BadRequestException("#{error.slurm.bgpsec.routerPublicKeyInvalid}");
 				}

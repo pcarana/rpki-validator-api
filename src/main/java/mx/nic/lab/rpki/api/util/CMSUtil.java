@@ -723,26 +723,6 @@ public class CMSUtil {
 	}
 
 	/**
-	 * Check if the encoded data is a valid {@link SubjectKeyIdentifier}
-	 * 
-	 * @param encodedData
-	 *            data to validate
-	 * @return <code>true</code> if an instance of {@link SubjectKeyIdentifier}
-	 *         could be created (this is the main validation)
-	 */
-	public static boolean isValidSubjectKeyIdentifier(byte[] encodedData) {
-		try {
-			SubjectKeyIdentifier skiInfo = SubjectKeyIdentifier.getInstance(encodedData);
-			if (skiInfo == null) {
-				return false;
-			}
-		} catch (IllegalArgumentException e) {
-			return false;
-		}
-		return true;
-	}
-
-	/**
 	 * Check if the encoded data is a valid {@link SubjectPublicKeyInfo}
 	 * 
 	 * @param encodedData
