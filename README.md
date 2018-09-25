@@ -1,6 +1,6 @@
 # RPKI Validator API
 
-This is a simple API to fetch data obtained by an RPPKI Relying Party (RP).
+This is a simple API to fetch data obtained by an RPKI Relying Party (RP).
 
 ## Protecting resources
 
@@ -62,8 +62,6 @@ The last step to have Apache Shiro ready to be used is to configure it (see more
 
 Here's an example of the configuration file with the following rules:
 * Protected resources using HTTP Basic Authentication:
-    * `/tal/sync`
-    * `/tal/sync/*`
     * `/slurm/*`
 * Users/passwords that the API will recognize:
      * _alvin / alvin_
@@ -81,7 +79,6 @@ bob = bob
 
 [urls]
 # Restricted paths that need authentication (one path per line)
-/tal/sync/** = authcBasic
 /slurm/** = authcBasic
 # The rest of the resources will be accessed anonymously
 /** = anon
