@@ -81,7 +81,6 @@ public class TalSingleResult extends ApiSingleResult<Tal> {
 		for (ValidationRun validationRun : tal.getValidationRuns()) {
 			JsonObjectBuilder objBuilder = Json.createObjectBuilder();
 			addKeyValueToBuilder(objBuilder, "status", validationRun.getStatus().toString(), true);
-			addKeyValueToBuilder(objBuilder, "type", validationRun.getType().toString(), true);
 			Instant completedAt = validationRun.getCompletedAt();
 			addKeyValueToBuilder(objBuilder, "completedAt", completedAt != null ? completedAt.toString() : null, true);
 			buildValidationChecks(objBuilder, validationRun);
@@ -122,7 +121,7 @@ public class TalSingleResult extends ApiSingleResult<Tal> {
 							}
 						}
 					}
-					addKeyValueToBuilder(checkBuilder, "key", keyBuilder.toString(), true);
+					addKeyValueToBuilder(checkBuilder, "message", keyBuilder.toString(), true);
 					switch (validationCheck.getStatus()) {
 					case ERROR:
 						errorBuilder.add(checkBuilder);
