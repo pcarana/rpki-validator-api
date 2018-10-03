@@ -122,6 +122,14 @@ public abstract class ApiServlet extends HttpServlet {
 		} catch (HttpException e) {
 			// Handled error, the result will be the exception sent
 			result = new ErrorResult(e);
+			if (e instanceof InternalServerErrorException) {
+				InternalServerErrorException ex = (InternalServerErrorException) e;
+				if (ex.getCause() != null) {
+					logger.log(Level.SEVERE, ex.getMessage(), ex);
+				} else {
+					logger.log(Level.SEVERE, e.getMessage(), e);
+				}
+			}
 		} catch (ApiDataAccessException e) {
 			// Some error sent by the implementation, handle properly
 			if (e instanceof ValidationException) {
