@@ -17,6 +17,7 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.bouncycastle.util.encoders.DecoderException;
 import org.bouncycastle.util.encoders.Hex;
 
 import mx.nic.lab.rpki.api.exception.BadRequestException;
@@ -329,6 +330,8 @@ public class SlurmBgpsecIdServlet extends SlurmBgpsecServlet {
 				}
 			} catch (IllegalArgumentException e) {
 				throw new BadRequestException(Util.concatenateParamsToLabel("#{error.slurm.bgpsec.notBase64}", "SKI"));
+			} catch (DecoderException e) {
+				throw new BadRequestException(Util.concatenateParamsToLabel("#{error.slurm.bgpsec.notHex}", "SKI"));
 			}
 		}
 
