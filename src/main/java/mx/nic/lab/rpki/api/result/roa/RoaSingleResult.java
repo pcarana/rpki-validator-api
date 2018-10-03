@@ -34,6 +34,7 @@ public class RoaSingleResult extends ApiSingleResult<Roa> {
 		addKeyValueToBuilder(builder, "prefix", roa.getPrefixText(), true);
 		addKeyValueToBuilder(builder, "prefixLength", roa.getPrefixLength(), true);
 		addKeyValueToBuilder(builder, "prefixMaxLength", roa.getPrefixMaxLength(), true);
+		addKeyValueToBuilder(builder, "prefixFamily", roa.getPrefixFamily(), true);
 		addKeyValueToBuilder(builder, "cms",
 				CMSUtil.getCmsAsJson(roa.getRpkiObject().getEncodedRpkiObject().getEncoded(), CMSUtil.CMSProfile.ROA),
 				true);

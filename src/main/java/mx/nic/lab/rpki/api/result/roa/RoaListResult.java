@@ -42,6 +42,7 @@ public class RoaListResult extends ApiListResult<Roa> {
 		addKeyValueToBuilder(builder, "prefix", roa.getPrefixText(), true);
 		addKeyValueToBuilder(builder, "prefixLength", roa.getPrefixLength(), true);
 		addKeyValueToBuilder(builder, "prefixMaxLength", roa.getPrefixMaxLength(), true);
+		addKeyValueToBuilder(builder, "prefixFamily", roa.getPrefixFamily(), true);
 		buildRoaGbrs(builder, roa);
 
 		return builder.build();
