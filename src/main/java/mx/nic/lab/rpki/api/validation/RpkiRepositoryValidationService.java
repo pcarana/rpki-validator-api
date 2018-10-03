@@ -110,7 +110,7 @@ public class RpkiRepositoryValidationService extends ValidationService {
 					URI.create(repository.getLocationUri()));
 			RpkiRepository parentRepository = findDownloadedParentRepository(fetchedLocations, repository);
 			if (parentRepository == null) {
-				logger.log(Level.INFO, "Storing object downloaded for " + repository.getLocationUri());
+				logger.log(Level.FINE, "Storing object downloaded for " + repository.getLocationUri());
 				Set<RpkiObject> createObjects = new HashSet<>();
 				storeObjects(targetDirectory, validationRun, validationResult, objectsBySha256, createObjects,
 						repository);
@@ -138,7 +138,7 @@ public class RpkiRepositoryValidationService extends ValidationService {
 			RpkiRepository parentRepository = fetchedLocations.get(parentLocation);
 			if (parentRepository != null) {
 				repository.setParentRepository(parentRepository);
-				logger.log(Level.INFO, "Already fetched " + repository.getLocationUri() + " as part of "
+				logger.log(Level.FINE, "Already fetched " + repository.getLocationUri() + " as part of "
 						+ parentRepository.getLocationUri() + ", skipping");
 				return parentRepository;
 			}
