@@ -61,7 +61,8 @@ public class RpkiObjectCleanupService extends ValidationService {
 		Set<RpkiObject> reachedObjects = new HashSet<>();
 		try {
 			for (Tal trustAnchor : getTalDAO().getAll(null)) {
-				logger.info("tracing objects for trust anchor " + trustAnchor);
+				logger.info("tracing objects for trust anchor " + trustAnchor.getName() + " with id "
+						+ trustAnchor.getId());
 				X509ResourceCertificate resourceCertificate = trustAnchor.getCertificate();
 				if (resourceCertificate != null) {
 					traceCertificateAuthority(now, resourceCertificate, reachedObjects);
@@ -112,7 +113,7 @@ public class RpkiObjectCleanupService extends ValidationService {
 		// Compare object instance identity to see if we've already visited
 		// the `rpkiObject` in the current run.
 		if (now == rpkiObject.getLastMarkedReachableAt()) {
-			logger.info("object already marked, skipping " + rpkiObject);
+			logger.log(Level.FINE, "object already marked, skipping " + rpkiObject);
 		}
 
 		rpkiObject.markReachable(now);

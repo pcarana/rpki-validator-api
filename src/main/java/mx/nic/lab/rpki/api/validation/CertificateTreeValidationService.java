@@ -124,7 +124,8 @@ public class CertificateTreeValidationService extends ValidationService {
 			validateCertificateAuthority(trustAnchor, registeredRepositories, context, validationResult);
 		} finally {
 			validationRun.completeWith(validationResult);
-			logger.info("tree validation " + validationRun.getStatus() + " for " + trustAnchor);
+			logger.info("tree validation " + validationRun.getStatus() + " for " + trustAnchor.getName() + " with id "
+					+ trustAnchorId);
 		}
 	}
 
