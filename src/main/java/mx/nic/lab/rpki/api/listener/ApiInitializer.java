@@ -145,8 +145,9 @@ public class ApiInitializer implements ServletContextListener {
 
 	@Override
 	public void contextDestroyed(ServletContextEvent event) {
-		servletContext = null;
 		MasterScheduler.shutdown();
+		DataAccessService.terminate();
+		servletContext = null;
 	}
 
 	public static ServletContext getServletContext() {
