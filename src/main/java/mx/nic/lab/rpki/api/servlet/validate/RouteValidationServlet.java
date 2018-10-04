@@ -18,6 +18,7 @@ import mx.nic.lab.rpki.api.servlet.DataAccessServlet;
 import mx.nic.lab.rpki.api.servlet.RequestMethod;
 import mx.nic.lab.rpki.api.util.Util;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
+import mx.nic.lab.rpki.db.pojo.ApiObject;
 import mx.nic.lab.rpki.db.pojo.RouteValidation;
 import mx.nic.lab.rpki.db.service.DataAccessService;
 import mx.nic.lab.rpki.db.spi.RouteValidationDAO;
@@ -47,7 +48,7 @@ public class RouteValidationServlet extends DataAccessServlet<RouteValidationDAO
 		Long asn = null;
 		try {
 			asn = Long.parseLong(additionalPathInfo.get(0));
-			if (asn < 0L || asn > 4294967295L) {
+			if (asn < ApiObject.ASN_MIN_VALUE || asn > ApiObject.ASN_MAX_VALUE) {
 				throw new BadRequestException("#{error.route.validation.asn.outOfRange}");
 			}
 		} catch (NumberFormatException e) {
