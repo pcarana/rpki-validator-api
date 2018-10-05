@@ -32,6 +32,7 @@ import mx.nic.lab.rpki.api.util.Util;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.exception.ValidationError;
 import mx.nic.lab.rpki.db.exception.ValidationException;
+import mx.nic.lab.rpki.db.pojo.ApiObject;
 import mx.nic.lab.rpki.db.pojo.PagingParameters;
 import mx.nic.lab.rpki.db.pojo.SlurmPrefix;
 import mx.nic.lab.rpki.db.spi.SlurmPrefixDAO;
@@ -316,6 +317,9 @@ public class SlurmPrefixIdServlet extends SlurmPrefixServlet {
 			}
 		} catch (ClassCastException cce) {
 			throw new BadRequestException(Util.concatenateParamsToLabel("#{error.invalid.dataType}", "asn", "Number"));
+		} catch (ArithmeticException e) {
+			throw new BadRequestException(Util.concatenateParamsToLabel("#{error.slurm.asnFormat}",
+					ApiObject.ASN_MIN_VALUE, ApiObject.ASN_MAX_VALUE));
 		}
 
 		try {
