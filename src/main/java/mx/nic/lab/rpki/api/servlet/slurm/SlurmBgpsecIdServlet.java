@@ -321,11 +321,11 @@ public class SlurmBgpsecIdServlet extends SlurmBgpsecServlet {
 					Util.concatenateParamsToLabel("#{error.invalid.dataType}", "comment", "String"));
 		}
 
-		// Check SKI and routerPublicKey are sent base64url encoded, and verify its
+		// Check SKI and routerPublicKey are sent base64 encoded, and verify its
 		// value
 		if (slurmBgpsec.getSki() != null && !slurmBgpsec.getSki().trim().isEmpty()) {
 			try {
-				byte[] decodedSki = Base64.getUrlDecoder().decode(slurmBgpsec.getSki().getBytes());
+				byte[] decodedSki = Base64.getDecoder().decode(slurmBgpsec.getSki().getBytes());
 				byte[] hexBytes = Hex.decode(decodedSki);
 				// Is the 160-bit SHA-1 hash (RFC 8416 section 3.3.2 citing RFC 6487 section
 				// 4.8.2)
@@ -341,7 +341,7 @@ public class SlurmBgpsecIdServlet extends SlurmBgpsecServlet {
 
 		if (slurmBgpsec.getRouterPublicKey() != null && !slurmBgpsec.getRouterPublicKey().trim().isEmpty()) {
 			try {
-				byte[] decodedPk = Base64.getUrlDecoder().decode(slurmBgpsec.getRouterPublicKey().getBytes());
+				byte[] decodedPk = Base64.getDecoder().decode(slurmBgpsec.getRouterPublicKey().getBytes());
 				if (!CMSUtil.isValidSubjectPublicKey(decodedPk)) {
 					throw new BadRequestException("#{error.slurm.bgpsec.routerPublicKeyInvalid}");
 				}
