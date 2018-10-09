@@ -28,7 +28,6 @@ import mx.nic.lab.rpki.api.result.ApiResult;
 import mx.nic.lab.rpki.api.result.EmptyResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmBgpsecListResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmBgpsecSingleResult;
-import mx.nic.lab.rpki.api.result.slurm.SlurmCreateResult;
 import mx.nic.lab.rpki.api.servlet.RequestMethod;
 import mx.nic.lab.rpki.api.util.CMSUtil;
 import mx.nic.lab.rpki.api.util.Util;
@@ -175,11 +174,10 @@ public class SlurmBgpsecIdServlet extends SlurmBgpsecServlet {
 		SlurmBgpsec newSlurmBgpsec = getSlurmBgpsecFromBody(request, type);
 		newSlurmBgpsec.setType(type);
 		try {
-			Long createdSlurmBgpsec = dao.create(newSlurmBgpsec);
-			if (createdSlurmBgpsec == null) {
+			if (!dao.create(newSlurmBgpsec)) {
 				throw new ConflictException("#{error.creationIncomplete}");
 			}
-			SlurmCreateResult result = new SlurmCreateResult(createdSlurmBgpsec);
+			EmptyResult result = new EmptyResult();
 			result.setCode(HttpServletResponse.SC_CREATED);
 			return result;
 		} catch (ApiDataAccessException e) {
