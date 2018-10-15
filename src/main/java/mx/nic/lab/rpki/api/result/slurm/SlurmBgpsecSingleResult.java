@@ -26,8 +26,8 @@ public class SlurmBgpsecSingleResult extends ApiSingleResult<SlurmBgpsec> {
 		}
 		JsonObjectBuilder builder = Json.createObjectBuilder();
 		addKeyValueToBuilder(builder, "id", slurmBgpsec.getId(), true);
-		addKeyValueToBuilder(builder, "asn", slurmBgpsec.getAsn(), true);
-		addKeyValueToBuilder(builder, "SKI", slurmBgpsec.getSki(), true);
+		addKeyValueToBuilder(builder, "asn", slurmBgpsec.getAsn(), false);
+		addKeyValueToBuilder(builder, "SKI", slurmBgpsec.getSki(), false);
 		addKeyValueToBuilder(builder, "routerPublicKey", slurmBgpsec.getRouterPublicKey(), false);
 		addKeyValueToBuilder(builder, "type", slurmBgpsec.getType() == SlurmBgpsec.TYPE_FILTER ? "filter" : "assertion",
 				true);

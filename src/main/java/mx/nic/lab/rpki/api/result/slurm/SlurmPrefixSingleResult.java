@@ -26,8 +26,8 @@ public class SlurmPrefixSingleResult extends ApiSingleResult<SlurmPrefix> {
 		}
 		JsonObjectBuilder builder = Json.createObjectBuilder();
 		addKeyValueToBuilder(builder, "id", slurmPrefix.getId(), true);
-		addKeyValueToBuilder(builder, "asn", slurmPrefix.getAsn(), true);
-		addKeyValueToBuilder(builder, "prefix", formatPrefix(slurmPrefix), true);
+		addKeyValueToBuilder(builder, "asn", slurmPrefix.getAsn(), false);
+		addKeyValueToBuilder(builder, "prefix", formatPrefix(slurmPrefix), false);
 		addKeyValueToBuilder(builder, "maxPrefixLength", slurmPrefix.getPrefixMaxLength(), false);
 		addKeyValueToBuilder(builder, "type", slurmPrefix.getType() == SlurmPrefix.TYPE_FILTER ? "filter" : "assertion",
 				true);
@@ -37,6 +37,9 @@ public class SlurmPrefixSingleResult extends ApiSingleResult<SlurmPrefix> {
 	}
 
 	private String formatPrefix(SlurmPrefix slurmPrefix) {
-		return slurmPrefix.getPrefixText() + "/" + slurmPrefix.getPrefixLength();
+		if (slurmPrefix.getPrefixText() != null && !slurmPrefix.getPrefixText().isEmpty()) {
+			return slurmPrefix.getPrefixText() + "/" + slurmPrefix.getPrefixLength();
+		}
+		return null;
 	}
 }
