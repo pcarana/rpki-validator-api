@@ -23,6 +23,7 @@ import com.google.common.io.Files;
 import mx.nic.lab.rpki.api.exception.BadRequestException;
 import mx.nic.lab.rpki.api.exception.HttpException;
 import mx.nic.lab.rpki.api.exception.NotFoundException;
+import mx.nic.lab.rpki.api.exception.TrustAnchorExtractorException;
 import mx.nic.lab.rpki.db.pojo.PagingParameters;
 import mx.nic.lab.rpki.db.pojo.Tal;
 import mx.nic.lab.rpki.db.pojo.TalUri;

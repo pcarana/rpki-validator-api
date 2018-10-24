@@ -41,8 +41,8 @@ import java.util.logging.Logger;
 
 import com.google.common.io.Files;
 
+import mx.nic.lab.rpki.api.exception.TrustAnchorExtractorException;
 import mx.nic.lab.rpki.api.util.RsyncUtils;
-import mx.nic.lab.rpki.api.util.TrustAnchorExtractorException;
 import mx.nic.lab.rpki.api.util.Util;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.exception.ErrorCodes;
