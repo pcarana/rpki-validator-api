@@ -32,6 +32,7 @@ import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.exception.ValidationError;
 import mx.nic.lab.rpki.db.exception.ValidationException;
 import mx.nic.lab.rpki.db.pojo.ApiObject;
+import mx.nic.lab.rpki.db.pojo.ListResult;
 import mx.nic.lab.rpki.db.pojo.PagingParameters;
 import mx.nic.lab.rpki.db.pojo.SlurmPrefix;
 import mx.nic.lab.rpki.db.spi.SlurmPrefixDAO;
@@ -102,6 +103,18 @@ public class SlurmPrefixIdServlet extends SlurmPrefixServlet {
 	}
 
 	/**
+	 * Get the requested service from the request
+	 * 
+	 * @param request
+	 * @return
+	 * @throws HttpException
+	 */
+	private String getRequestedService(HttpServletRequest request) throws HttpException {
+		List<String> additionalPathInfo = Util.getAdditionaPathInfo(request, 1, false);
+		return additionalPathInfo.get(0);
+	}
+
+	/**
 	 * Handle a GET request, only 1 parameter is expected, it must be a: integer
 	 * (id), "filter", or "assertion". Depending on the request a distinct ApiResult
 	 * will be returned (a single result for the "id" search, or a list for the
@@ -122,13 +135,13 @@ public class SlurmPrefixIdServlet extends SlurmPrefixServlet {
 
 		// Check if is a filter/assertion request
 		if (requestedService.equals(FILTER_SERVICE)) {
-			PagingParameters pagingParams = Util.createFromRequest(request, validFilterSortKeysMap);
-			List<SlurmPrefix> filters = dao.getAllByType(SlurmPrefix.TYPE_FILTER, pagingParams);
-			result = new SlurmPrefixListResult(filters);
+			PagingParameters pagingParameters = getPagingParameters(request);
+			ListResult<SlurmPrefix> filters = dao.getAllByType(SlurmPrefix.TYPE_FILTER, pagingParameters);
+			result = new SlurmPrefixListResult(filters, pagingParameters);
 		} else if (requestedService.equals(ASSERTION_SERVICE)) {
-			PagingParameters pagingParams = Util.createFromRequest(request, validAssertionSortKeysMap);
-			List<SlurmPrefix> assertions = dao.getAllByType(SlurmPrefix.TYPE_ASSERTION, pagingParams);
-			result = new SlurmPrefixListResult(assertions);
+			PagingParameters pagingParameters = getPagingParameters(request);
+			ListResult<SlurmPrefix> assertions = dao.getAllByType(SlurmPrefix.TYPE_ASSERTION, pagingParameters);
+			result = new SlurmPrefixListResult(assertions, pagingParameters);
 		} else {
 			// Check if is an ID
 			Long id = null;
@@ -341,4 +354,22 @@ public class SlurmPrefixIdServlet extends SlurmPrefixServlet {
 
 		return slurmPrefix;
 	}
+
+	@Override
+	protected Map<String, String> getValidSortKeys(HttpServletRequest request) {
+		// Valid only for services "filter" or "assertion"
+		String requestedService;
+		try {
+			requestedService = getRequestedService(request);
+		} catch (HttpException e) {
+			return null;
+		}
+		if (requestedService.equals(FILTER_SERVICE)) {
+			return validFilterSortKeysMap;
+		} else if (requestedService.equals(ASSERTION_SERVICE)) {
+			return validAssertionSortKeysMap;
+		}
+		return null;
+	}
+
 }

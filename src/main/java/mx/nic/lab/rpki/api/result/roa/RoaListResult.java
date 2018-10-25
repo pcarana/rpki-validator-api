@@ -1,7 +1,5 @@
 package mx.nic.lab.rpki.api.result.roa;
 
-import java.util.List;
-
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
@@ -10,6 +8,8 @@ import javax.json.JsonStructure;
 
 import mx.nic.lab.rpki.api.result.ApiListResult;
 import mx.nic.lab.rpki.db.pojo.Gbr;
+import mx.nic.lab.rpki.db.pojo.ListResult;
+import mx.nic.lab.rpki.db.pojo.PagingParameters;
 import mx.nic.lab.rpki.db.pojo.Roa;
 
 /**
@@ -18,18 +18,19 @@ import mx.nic.lab.rpki.db.pojo.Roa;
  */
 public class RoaListResult extends ApiListResult<Roa> {
 
-	public RoaListResult(List<Roa> roas) {
+	public RoaListResult(ListResult<Roa> listResult, PagingParameters pagingParameters) {
 		super();
-		setApiObjects(roas);
+		setListResult(listResult);
+		setPagingParameters(pagingParameters);
 	}
 
 	@Override
-	public JsonStructure toJsonStructure() {
-		if (getApiObjects() == null || getApiObjects().isEmpty()) {
+	public JsonStructure resultToJsonStructure() {
+		if (getListResult() == null || getListResult().getResults().isEmpty()) {
 			return JsonObject.EMPTY_JSON_ARRAY;
 		}
 		JsonArrayBuilder jsonBuilder = Json.createArrayBuilder();
-		getApiObjects().forEach(roa -> {
+		getListResult().getResults().forEach(roa -> {
 			jsonBuilder.add(buildSingleRoa(roa));
 		});
 		return jsonBuilder.build();

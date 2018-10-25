@@ -1,13 +1,13 @@
 package mx.nic.lab.rpki.api.result.slurm;
 
-import java.util.List;
-
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonStructure;
 
 import mx.nic.lab.rpki.api.result.ApiListResult;
+import mx.nic.lab.rpki.db.pojo.ListResult;
+import mx.nic.lab.rpki.db.pojo.PagingParameters;
 import mx.nic.lab.rpki.db.pojo.SlurmBgpsec;
 
 /**
@@ -16,19 +16,20 @@ import mx.nic.lab.rpki.db.pojo.SlurmBgpsec;
  */
 public class SlurmBgpsecListResult extends ApiListResult<SlurmBgpsec> {
 
-	public SlurmBgpsecListResult(List<SlurmBgpsec> slurmBgpsecs) {
+	public SlurmBgpsecListResult(ListResult<SlurmBgpsec> listResult, PagingParameters pagingParameters) {
 		super();
-		setApiObjects(slurmBgpsecs);
+		setListResult(listResult);
+		setPagingParameters(pagingParameters);
 	}
 
 	@Override
-	public JsonStructure toJsonStructure() {
-		if (getApiObjects() == null || getApiObjects().isEmpty()) {
+	public JsonStructure resultToJsonStructure() {
+		if (getListResult() == null || getListResult().getResults().isEmpty()) {
 			return JsonObject.EMPTY_JSON_ARRAY;
 		}
 		JsonArrayBuilder jsonBuilder = Json.createArrayBuilder();
 		// Use the SlurmBgpsecSingleResult implementation
-		getApiObjects().forEach(obj -> {
+		getListResult().getResults().forEach(obj -> {
 			SlurmBgpsecSingleResult temp = new SlurmBgpsecSingleResult(obj);
 			jsonBuilder.add(temp.toJsonStructure());
 		});

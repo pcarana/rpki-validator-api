@@ -60,7 +60,7 @@ public class RpkiObjectCleanupService extends ValidationService {
 		Instant now = Instant.now();
 		Set<RpkiObject> reachedObjects = new HashSet<>();
 		try {
-			for (Tal trustAnchor : getTalDAO().getAll(null)) {
+			for (Tal trustAnchor : getTalDAO().getAll(null).getResults()) {
 				logger.info("tracing objects for trust anchor " + trustAnchor.getName() + " with id "
 						+ trustAnchor.getId());
 				X509ResourceCertificate resourceCertificate = trustAnchor.getCertificate();

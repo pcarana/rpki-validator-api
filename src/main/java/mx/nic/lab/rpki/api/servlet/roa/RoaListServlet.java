@@ -12,8 +12,8 @@ import mx.nic.lab.rpki.api.exception.HttpException;
 import mx.nic.lab.rpki.api.result.ApiResult;
 import mx.nic.lab.rpki.api.result.roa.RoaListResult;
 import mx.nic.lab.rpki.api.servlet.RequestMethod;
-import mx.nic.lab.rpki.api.util.Util;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
+import mx.nic.lab.rpki.db.pojo.ListResult;
 import mx.nic.lab.rpki.db.pojo.PagingParameters;
 import mx.nic.lab.rpki.db.pojo.Roa;
 import mx.nic.lab.rpki.db.spi.RoaDAO;
@@ -47,9 +47,9 @@ public class RoaListServlet extends RoaServlet {
 	@Override
 	protected ApiResult doApiDaRequest(RequestMethod requestMethod, HttpServletRequest request, RoaDAO dao)
 			throws HttpException, ApiDataAccessException {
-		PagingParameters pagingParams = Util.createFromRequest(request, validSortKeysMap);
-		List<Roa> roas = dao.getAll(pagingParams);
-		return new RoaListResult(roas);
+		PagingParameters pagingParameters = getPagingParameters(request);
+		ListResult<Roa> roas = dao.getAll(pagingParameters);
+		return new RoaListResult(roas, pagingParameters);
 	}
 
 	@Override
@@ -60,6 +60,11 @@ public class RoaListServlet extends RoaServlet {
 	@Override
 	protected List<RequestMethod> getSupportedRequestMethods() {
 		return Arrays.asList(RequestMethod.GET);
+	}
+
+	@Override
+	protected Map<String, String> getValidSortKeys(HttpServletRequest request) {
+		return validSortKeysMap;
 	}
 
 }

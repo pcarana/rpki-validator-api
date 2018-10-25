@@ -20,6 +20,7 @@ import javax.servlet.http.HttpServletRequest;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
+import mx.nic.lab.rpki.api.config.ApiConfiguration;
 import mx.nic.lab.rpki.api.exception.BadRequestException;
 import mx.nic.lab.rpki.api.exception.HttpException;
 import mx.nic.lab.rpki.api.exception.NotFoundException;
@@ -163,17 +164,26 @@ public class Util {
 		String rcvdSort = request.getParameter(SORT);
 
 		PagingParameters pagingParameters = new PagingParameters();
+		Integer maxResponseResults = ApiConfiguration.getMaxResponseResults();
 		if (rcvdLimit != null) {
+			Integer intLimit = null;
 			try {
-				pagingParameters.setLimit(Integer.parseInt(rcvdLimit));
+				intLimit = Integer.parseInt(rcvdLimit);
 			} catch (NumberFormatException e) {
 				throw new BadRequestException(
 						Util.concatenateParamsToLabel("#{error.invalid.dataType}", LIMIT, "integer"));
 			}
 			// Only values greater than 0 are accepted
-			if (pagingParameters.getLimit() < 1) {
+			if (intLimit < 1) {
 				throw new BadRequestException(Util.concatenateParamsToLabel("#{error.paging.minValue}", LIMIT, "1"));
 			}
+			// If greater than max, use the max limit
+			if (intLimit > maxResponseResults) {
+				intLimit = maxResponseResults;
+			}
+			pagingParameters.setLimit(intLimit);
+		} else {
+			pagingParameters.setLimit(maxResponseResults);
 		}
 		// limit can be received without offset
 		if (rcvdOffset != null) {
@@ -184,7 +194,7 @@ public class Util {
 						Util.concatenateParamsToLabel("#{error.invalid.dataType}", OFFSET, "integer"));
 			}
 			// ...but offset can't be received without limit
-			if (pagingParameters.getLimit() == -1) {
+			if (rcvdLimit == null) {
 				throw new BadRequestException("#{error.paging.offsetWithoutLimit}");
 			}
 			// Only positive values are accepted (including 0)
@@ -192,7 +202,7 @@ public class Util {
 				throw new BadRequestException(Util.concatenateParamsToLabel("#{error.paging.minValue}", OFFSET, "0"));
 			}
 		}
-		if (rcvdSort != null) {
+		if (rcvdSort != null && validSortKeysMap != null) {
 			if (rcvdSort.trim().isEmpty()) {
 				throw new BadRequestException("#{error.paging.emptySort}");
 			}

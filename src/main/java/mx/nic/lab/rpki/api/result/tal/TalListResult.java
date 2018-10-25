@@ -1,7 +1,5 @@
 package mx.nic.lab.rpki.api.result.tal;
 
-import java.util.List;
-
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
@@ -9,6 +7,8 @@ import javax.json.JsonObjectBuilder;
 import javax.json.JsonStructure;
 
 import mx.nic.lab.rpki.api.result.ApiListResult;
+import mx.nic.lab.rpki.db.pojo.ListResult;
+import mx.nic.lab.rpki.db.pojo.PagingParameters;
 import mx.nic.lab.rpki.db.pojo.Tal;
 import mx.nic.lab.rpki.db.pojo.TalUri;
 
@@ -18,18 +18,19 @@ import mx.nic.lab.rpki.db.pojo.TalUri;
  */
 public class TalListResult extends ApiListResult<Tal> {
 
-	public TalListResult(List<Tal> tals) {
+	public TalListResult(ListResult<Tal> listResult, PagingParameters pagingParameters) {
 		super();
-		setApiObjects(tals);
+		setListResult(listResult);
+		setPagingParameters(pagingParameters);
 	}
 
 	@Override
-	public JsonStructure toJsonStructure() {
-		if (getApiObjects() == null) {
+	public JsonStructure resultToJsonStructure() {
+		if (getListResult() == null || getListResult().getResults().isEmpty()) {
 			return JsonObject.EMPTY_JSON_ARRAY;
 		}
 		JsonArrayBuilder jsonBuilder = Json.createArrayBuilder();
-		getApiObjects().forEach(tal -> {
+		getListResult().getResults().forEach(tal -> {
 			jsonBuilder.add(buildSingleTal(tal));
 		});
 		return jsonBuilder.build();

@@ -1,13 +1,13 @@
 package mx.nic.lab.rpki.api.result.slurm;
 
-import java.util.List;
-
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonStructure;
 
 import mx.nic.lab.rpki.api.result.ApiListResult;
+import mx.nic.lab.rpki.db.pojo.ListResult;
+import mx.nic.lab.rpki.db.pojo.PagingParameters;
 import mx.nic.lab.rpki.db.pojo.SlurmPrefix;
 
 /**
@@ -16,19 +16,20 @@ import mx.nic.lab.rpki.db.pojo.SlurmPrefix;
  */
 public class SlurmPrefixListResult extends ApiListResult<SlurmPrefix> {
 
-	public SlurmPrefixListResult(List<SlurmPrefix> slurmPrefixes) {
+	public SlurmPrefixListResult(ListResult<SlurmPrefix> listResult, PagingParameters pagingParameters) {
 		super();
-		setApiObjects(slurmPrefixes);
+		setListResult(listResult);
+		setPagingParameters(pagingParameters);
 	}
 
 	@Override
-	public JsonStructure toJsonStructure() {
-		if (getApiObjects() == null || getApiObjects().isEmpty()) {
+	public JsonStructure resultToJsonStructure() {
+		if (getListResult() == null || getListResult().getResults().isEmpty()) {
 			return JsonObject.EMPTY_JSON_ARRAY;
 		}
 		JsonArrayBuilder jsonBuilder = Json.createArrayBuilder();
 		// Use the SlurmPrefixSingleResult implementation
-		getApiObjects().forEach(obj -> {
+		getListResult().getResults().forEach(obj -> {
 			SlurmPrefixSingleResult temp = new SlurmPrefixSingleResult(obj);
 			jsonBuilder.add(temp.toJsonStructure());
 		});

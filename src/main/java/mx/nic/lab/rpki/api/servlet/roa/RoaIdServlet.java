@@ -2,6 +2,7 @@ package mx.nic.lab.rpki.api.servlet.roa;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -53,6 +54,11 @@ public class RoaIdServlet extends RoaServlet {
 	@Override
 	protected List<RequestMethod> getSupportedRequestMethods() {
 		return Arrays.asList(RequestMethod.GET);
+	}
+
+	@Override
+	protected Map<String, String> getValidSortKeys(HttpServletRequest request) {
+		return null;
 	}
 
 }

@@ -26,6 +26,7 @@ public class ApiConfiguration {
 
 	// Configuration keys
 	private static final String LANGUAGE_KEY = "language";
+	private static final String MAX_RESPONSE_RESULTS_KEY = "max.response.results";
 	private static final String DOWNLOADED_REPO_LOCATION_KEY = "downloaded.repositories.location";
 	private static final String TALS_LOCATION_KEY = "tals.location";
 	private static final String TRUST_ANCHOR_VALIDATION_SCHEDULE_KEY = "trust.anchor.validation.schedule";
@@ -33,6 +34,7 @@ public class ApiConfiguration {
 
 	// Properties to configure
 	private static String serverLanguage;
+	private static Integer maxResponseResults;
 	private static String downloadedRepositoriesLocation;
 	private static String talsLocation;
 	private static String trustAnchorValidationSchedule;
@@ -69,6 +71,17 @@ public class ApiConfiguration {
 				exceptions.add(new IllegalArgumentException("The language " + serverLanguage + " couldn't be loaded"));
 			} else {
 				Locale.setDefault(validLocale);
+			}
+		}
+
+		if (isPropertyNullOrEmpty(MAX_RESPONSE_RESULTS_KEY)) {
+			invalidProperties.add(MAX_RESPONSE_RESULTS_KEY);
+		} else {
+			try {
+				maxResponseResults = Integer.parseInt(systemProperties.getProperty(MAX_RESPONSE_RESULTS_KEY).trim());
+			} catch (NumberFormatException e) {
+				invalidProperties.add(MAX_RESPONSE_RESULTS_KEY);
+				exceptions.add(e);
 			}
 		}
 
@@ -131,6 +144,13 @@ public class ApiConfiguration {
 		return systemProperty == null || systemProperty.trim().isEmpty();
 	}
 
+	/**
+	 * Validate that the <code>location</code> is a valid path and a directory
+	 * 
+	 * @param location
+	 * @param exceptions
+	 * @return
+	 */
 	private static boolean isValidLocation(String location, List<Exception> exceptions) {
 		try {
 			Path validPath = Paths.get(location);
@@ -146,6 +166,14 @@ public class ApiConfiguration {
 		return false;
 	}
 
+	/**
+	 * Validate the <code>value</code> as a {@link Duration} using
+	 * {@link Duration#parse(CharSequence)}
+	 * 
+	 * @param value
+	 * @param exceptions
+	 * @return
+	 */
 	private static boolean isValidDuration(String value, List<Exception> exceptions) {
 		try {
 			Duration.parse(value);
@@ -156,6 +184,14 @@ public class ApiConfiguration {
 		return false;
 	}
 
+	/**
+	 * Validate the <code>value</code> as a CRON expression using
+	 * {@link CronExpression#validateExpression(String)}
+	 * 
+	 * @param value
+	 * @param exceptions
+	 * @return
+	 */
 	private static boolean isValidCronExpression(String value, List<Exception> exceptions) {
 		try {
 			CronExpression.validateExpression(value);
@@ -168,6 +204,10 @@ public class ApiConfiguration {
 
 	public static String getServerLanguage() {
 		return serverLanguage;
+	}
+
+	public static Integer getMaxResponseResults() {
+		return maxResponseResults;
 	}
 
 	public static String getDownloadedRepositoriesLocation() {

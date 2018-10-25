@@ -87,7 +87,7 @@ public class TrustAnchorValidationService extends ValidationService {
 		File talsLocation = getTalsLocation();
 		Map<Long, Tal> talsToDelete = new HashMap<>();
 		try {
-			List<Tal> tals = getTalDAO().getAll(null);
+			List<Tal> tals = getTalDAO().getAll(null).getResults();
 			tals.forEach((tal) -> talsToDelete.put(tal.getId(), tal));
 		} catch (ApiDataAccessException e) {
 			throw new InitializationException("Error getting existent tals data", e);

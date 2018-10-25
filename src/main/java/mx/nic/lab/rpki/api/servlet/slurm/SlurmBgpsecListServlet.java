@@ -12,8 +12,8 @@ import mx.nic.lab.rpki.api.exception.HttpException;
 import mx.nic.lab.rpki.api.result.ApiResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmBgpsecListResult;
 import mx.nic.lab.rpki.api.servlet.RequestMethod;
-import mx.nic.lab.rpki.api.util.Util;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
+import mx.nic.lab.rpki.db.pojo.ListResult;
 import mx.nic.lab.rpki.db.pojo.PagingParameters;
 import mx.nic.lab.rpki.db.pojo.SlurmBgpsec;
 import mx.nic.lab.rpki.db.spi.SlurmBgpsecDAO;
@@ -45,9 +45,9 @@ public class SlurmBgpsecListServlet extends SlurmBgpsecServlet {
 	@Override
 	protected ApiResult doApiDaRequest(RequestMethod requestMethod, HttpServletRequest request, SlurmBgpsecDAO dao)
 			throws HttpException, ApiDataAccessException {
-		PagingParameters pagingParams = Util.createFromRequest(request, validSortKeysMap);
-		List<SlurmBgpsec> slurmBgpsecs = dao.getAll(pagingParams);
-		return new SlurmBgpsecListResult(slurmBgpsecs);
+		PagingParameters pagingParameters = getPagingParameters(request);
+		ListResult<SlurmBgpsec> slurmBgpsecs = dao.getAll(pagingParameters);
+		return new SlurmBgpsecListResult(slurmBgpsecs, pagingParameters);
 	}
 
 	@Override
@@ -58,6 +58,11 @@ public class SlurmBgpsecListServlet extends SlurmBgpsecServlet {
 	@Override
 	protected List<RequestMethod> getSupportedRequestMethods() {
 		return Arrays.asList(RequestMethod.GET);
+	}
+
+	@Override
+	protected Map<String, String> getValidSortKeys(HttpServletRequest request) {
+		return validSortKeysMap;
 	}
 
 }

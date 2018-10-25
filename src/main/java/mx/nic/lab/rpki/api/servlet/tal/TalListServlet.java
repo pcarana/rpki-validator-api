@@ -12,8 +12,8 @@ import mx.nic.lab.rpki.api.exception.HttpException;
 import mx.nic.lab.rpki.api.result.ApiResult;
 import mx.nic.lab.rpki.api.result.tal.TalListResult;
 import mx.nic.lab.rpki.api.servlet.RequestMethod;
-import mx.nic.lab.rpki.api.util.Util;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
+import mx.nic.lab.rpki.db.pojo.ListResult;
 import mx.nic.lab.rpki.db.pojo.PagingParameters;
 import mx.nic.lab.rpki.db.pojo.Tal;
 import mx.nic.lab.rpki.db.spi.TalDAO;
@@ -44,9 +44,9 @@ public class TalListServlet extends TalServlet {
 	@Override
 	protected ApiResult doApiDaRequest(RequestMethod requestMethod, HttpServletRequest request, TalDAO dao)
 			throws HttpException, ApiDataAccessException {
-		PagingParameters pagingParams = Util.createFromRequest(request, validSortKeysMap);
-		List<Tal> tals = dao.getAll(pagingParams);
-		return new TalListResult(tals);
+		PagingParameters pagingParameters = getPagingParameters(request);
+		ListResult<Tal> tals = dao.getAll(pagingParameters);
+		return new TalListResult(tals, pagingParameters);
 	}
 
 	@Override
@@ -57,6 +57,11 @@ public class TalListServlet extends TalServlet {
 	@Override
 	protected List<RequestMethod> getSupportedRequestMethods() {
 		return Arrays.asList(RequestMethod.GET);
+	}
+
+	@Override
+	protected Map<String, String> getValidSortKeys(HttpServletRequest request) {
+		return validSortKeysMap;
 	}
 
 }

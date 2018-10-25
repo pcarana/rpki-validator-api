@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import java.util.logging.Level;
@@ -18,12 +19,16 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import mx.nic.lab.rpki.api.exception.BadRequestException;
 import mx.nic.lab.rpki.api.exception.HttpException;
 import mx.nic.lab.rpki.api.exception.InternalServerErrorException;
+import mx.nic.lab.rpki.api.exception.MethodNotAllowedException;
 import mx.nic.lab.rpki.api.result.ApiResult;
 import mx.nic.lab.rpki.api.result.error.ErrorResult;
+import mx.nic.lab.rpki.api.util.Util;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.exception.ValidationException;
+import mx.nic.lab.rpki.db.pojo.PagingParameters;
 
 /**
  * Base class of all API servlets, implements all the supported request methods
@@ -118,6 +123,10 @@ public abstract class ApiServlet extends HttpServlet {
 			throws ServletException, IOException {
 		ApiResult result;
 		try {
+			// Validate supported methods
+			if (getSupportedRequestMethods() == null || !getSupportedRequestMethods().contains(requestMethod)) {
+				throw new MethodNotAllowedException();
+			}
 			result = doApiRequest(requestMethod, req);
 		} catch (HttpException e) {
 			// Handled error, the result will be the exception sent
@@ -228,6 +237,27 @@ public abstract class ApiServlet extends HttpServlet {
 	}
 
 	/**
+	 * Get the received paging parameters, defined here so that the servlet that
+	 * need it can use it
+	 * 
+	 * @param request
+	 * @return
+	 * @throws BadRequestException
+	 */
+	protected PagingParameters getPagingParameters(HttpServletRequest request) throws BadRequestException {
+		return Util.createFromRequest(request, getValidSortKeys(request));
+	}
+
+	/**
+	 * Returns the supported request methods by the servlet. If the servlet supports
+	 * multiple methods, then it's its responsibility to handle the behavior
+	 * corresponding to each method.
+	 * 
+	 * @return The list of supported {@link RequestMethod}s
+	 */
+	protected abstract List<RequestMethod> getSupportedRequestMethods();
+
+	/**
 	 * Handles the request and builds a response. Each servlet that extends the
 	 * {@link ApiServlet} will handle the supported methods. The response will be
 	 * built for you at {@link ApiServlet}.
@@ -245,4 +275,14 @@ public abstract class ApiServlet extends HttpServlet {
 	protected abstract ApiResult doApiRequest(RequestMethod requestMethod, HttpServletRequest request)
 			throws HttpException, ApiDataAccessException;
 
+	/**
+	 * Valid sort keys that can be received as query parameters, they're mapped to
+	 * the corresponding POJO properties. The key must be the name of the parameter,
+	 * the value must be the name of the POJO property. If the servlet doesn't
+	 * support paging parameters, then it must return a <code>null</code> value.
+	 * 
+	 * @param request
+	 * @return Map of the valid query parameters to use as paging parameters
+	 */
+	protected abstract Map<String, String> getValidSortKeys(HttpServletRequest request);
 }

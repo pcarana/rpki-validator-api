@@ -2,13 +2,11 @@ package mx.nic.lab.rpki.api.servlet;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
-import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 
 import mx.nic.lab.rpki.api.exception.BadRequestException;
 import mx.nic.lab.rpki.api.exception.HttpException;
-import mx.nic.lab.rpki.api.exception.MethodNotAllowedException;
 import mx.nic.lab.rpki.api.exception.NotFoundException;
 import mx.nic.lab.rpki.api.result.ApiResult;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
@@ -59,10 +57,6 @@ public abstract class DataAccessServlet<T extends DAO> extends ApiServlet {
 			throw new BadRequestException("#{error.notUtfEncoded}", e);
 		}
 
-		// Validate supported methods
-		if (getSupportedRequestMethods() == null || !getSupportedRequestMethods().contains(requestMethod)) {
-			throw new MethodNotAllowedException();
-		}
 		return dao;
 	}
 
@@ -80,12 +74,4 @@ public abstract class DataAccessServlet<T extends DAO> extends ApiServlet {
 	protected abstract ApiResult doApiDaRequest(RequestMethod requestMethod, HttpServletRequest request, T dao)
 			throws HttpException, ApiDataAccessException;
 
-	/**
-	 * Returns the supported request methods by the servlet. If the servlet supports
-	 * multiple methods, then it's its responsibility to handle the behavior
-	 * corresponding to each method.
-	 * 
-	 * @return The list of supported {@link RequestMethod}s
-	 */
-	protected abstract List<RequestMethod> getSupportedRequestMethods();
 }

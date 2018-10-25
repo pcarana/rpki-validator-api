@@ -1,5 +1,9 @@
 package mx.nic.lab.rpki.api.servlet;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
 import javax.servlet.RequestDispatcher;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -32,6 +36,16 @@ public class ExceptionServlet extends ApiServlet {
 			request.setAttribute(RequestDispatcher.ERROR_MESSAGE, request.getRequestURI());
 		}
 		return new ErrorResult(request);
+	}
+
+	@Override
+	protected List<RequestMethod> getSupportedRequestMethods() {
+		return Arrays.asList(RequestMethod.values());
+	}
+
+	@Override
+	protected Map<String, String> getValidSortKeys(HttpServletRequest request) {
+		return null;
 	}
 
 }
