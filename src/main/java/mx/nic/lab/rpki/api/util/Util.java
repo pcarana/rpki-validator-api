@@ -222,7 +222,7 @@ public class Util {
 							Util.concatenateParamsToLabel("#{error.paging.invalidColumnSort}", key));
 				}
 				// Check for duplicates
-				if (paramMap.containsKey(key)) {
+				if (paramMap.containsKey(validSortKeysMap.get(key))) {
 					throw new BadRequestException(Util.concatenateParamsToLabel("#{error.paging.duplicatedSort}", key));
 				}
 				paramMap.put(validSortKeysMap.get(key), ordering);
