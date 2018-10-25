@@ -37,19 +37,17 @@ public class SlurmResult extends ApiSingleResult<Slurm> {
 		JsonArrayBuilder bgpsecFilters = Json.createArrayBuilder();
 		JsonArrayBuilder bgpsecAssertions = Json.createArrayBuilder();
 		slurm.getPrefixes().forEach(prefix -> {
-			if (prefix.getType() == SlurmPrefix.TYPE_FILTER) {
+			if (prefix.getType().equals(SlurmPrefix.TYPE_FILTER)) {
 				prefixFilters.add(getFormattedPrefix(prefix));
-			} else if (prefix.getType() == SlurmPrefix.TYPE_ASSERTION) {
+			} else if (prefix.getType().equals(SlurmPrefix.TYPE_ASSERTION)) {
 				prefixAssertions.add(getFormattedPrefix(prefix));
-
 			}
 		});
 		slurm.getBgpsecs().forEach(bgpsec -> {
-			if (bgpsec.getType() == SlurmBgpsec.TYPE_FILTER) {
+			if (bgpsec.getType().equals(SlurmBgpsec.TYPE_FILTER)) {
 				bgpsecFilters.add(getFormattedBgpsec(bgpsec));
-			} else if (bgpsec.getType() == SlurmBgpsec.TYPE_ASSERTION) {
+			} else if (bgpsec.getType().equals(SlurmBgpsec.TYPE_ASSERTION)) {
 				bgpsecAssertions.add(getFormattedBgpsec(bgpsec));
-
 			}
 		});
 

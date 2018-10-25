@@ -173,7 +173,7 @@ public class SlurmBgpsecIdServlet extends SlurmBgpsecServlet {
 		List<String> additionalPathInfo = Util.getAdditionaPathInfo(request, 1, false);
 
 		// Check if is a filter/assertion request
-		int type;
+		String type;
 		String requestedService = additionalPathInfo.get(0);
 		if (requestedService.equals(FILTER_SERVICE)) {
 			type = SlurmBgpsec.TYPE_FILTER;
@@ -247,7 +247,7 @@ public class SlurmBgpsecIdServlet extends SlurmBgpsecServlet {
 	 * @return
 	 * @throws HttpException
 	 */
-	private SlurmBgpsec getSlurmBgpsecFromBody(HttpServletRequest request, int type) throws HttpException {
+	private SlurmBgpsec getSlurmBgpsecFromBody(HttpServletRequest request, String type) throws HttpException {
 		SlurmBgpsec slurmBgpsec = new SlurmBgpsec();
 		JsonObject object = null;
 		try (JsonReader reader = Json.createReader(request.getReader())) {
@@ -274,7 +274,7 @@ public class SlurmBgpsecIdServlet extends SlurmBgpsecServlet {
 			JsonNumber number = object.getJsonNumber("asn");
 			if (number != null) {
 				slurmBgpsec.setAsn(number.longValueExact());
-			} else if (type == SlurmBgpsec.TYPE_ASSERTION) {
+			} else if (type.equals(SlurmBgpsec.TYPE_ASSERTION)) {
 				throw new BadRequestException("#{error.slurm.asnRequired}");
 			}
 		} catch (ClassCastException cce) {
@@ -292,7 +292,7 @@ public class SlurmBgpsecIdServlet extends SlurmBgpsecServlet {
 			}
 			slurmBgpsec.setSki(value.trim());
 		} catch (NullPointerException npe) {
-			if (type == SlurmBgpsec.TYPE_ASSERTION) {
+			if (type.equals(SlurmBgpsec.TYPE_ASSERTION)) {
 				throw new BadRequestException("#{error.slurm.bgpsec.skiRequired}");
 			} else if (slurmBgpsec.getAsn() == null) {
 				// In a Filter is optional, but either an asn or a SKI must be present
@@ -309,7 +309,7 @@ public class SlurmBgpsecIdServlet extends SlurmBgpsecServlet {
 			}
 			slurmBgpsec.setRouterPublicKey(value.trim());
 		} catch (NullPointerException npe) {
-			if (type == SlurmBgpsec.TYPE_ASSERTION) {
+			if (type.equals(SlurmBgpsec.TYPE_ASSERTION)) {
 				throw new BadRequestException("#{error.slurm.bgpsec.routerPublicKeyRequired}");
 			}
 		} catch (ClassCastException cce) {

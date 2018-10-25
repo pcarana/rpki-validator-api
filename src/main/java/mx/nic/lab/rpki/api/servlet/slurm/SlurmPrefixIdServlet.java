@@ -176,7 +176,7 @@ public class SlurmPrefixIdServlet extends SlurmPrefixServlet {
 		List<String> additionalPathInfo = Util.getAdditionaPathInfo(request, 1, false);
 
 		// Check if is a filter/assertion request
-		int type;
+		String type;
 		String requestedService = additionalPathInfo.get(0);
 		if (requestedService.equals(FILTER_SERVICE)) {
 			type = SlurmPrefix.TYPE_FILTER;
@@ -261,7 +261,7 @@ public class SlurmPrefixIdServlet extends SlurmPrefixServlet {
 	 * @return
 	 * @throws HttpException
 	 */
-	private SlurmPrefix getSlurmPrefixFromBody(HttpServletRequest request, int type) throws HttpException {
+	private SlurmPrefix getSlurmPrefixFromBody(HttpServletRequest request, String type) throws HttpException {
 		SlurmPrefix slurmPrefix = new SlurmPrefix();
 		JsonObject object = null;
 		try (JsonReader reader = Json.createReader(request.getReader())) {
@@ -286,7 +286,7 @@ public class SlurmPrefixIdServlet extends SlurmPrefixServlet {
 		try {
 			prefixRcv = object.getString("prefix");
 		} catch (NullPointerException npe) {
-			if (type == SlurmPrefix.TYPE_ASSERTION) {
+			if (type.equals(SlurmPrefix.TYPE_ASSERTION)) {
 				throw new BadRequestException("#{error.slurm.prefix.prefixRequired}");
 			}
 		} catch (ClassCastException cce) {
@@ -320,7 +320,7 @@ public class SlurmPrefixIdServlet extends SlurmPrefixServlet {
 			JsonNumber number = object.getJsonNumber("asn");
 			if (number != null) {
 				slurmPrefix.setAsn(number.longValueExact());
-			} else if (type == SlurmPrefix.TYPE_ASSERTION) {
+			} else if (type.equals(SlurmPrefix.TYPE_ASSERTION)) {
 				throw new BadRequestException("#{error.slurm.asnRequired}");
 			} else if (slurmPrefix.getStartPrefix() == null) {
 				// In a Filter is optional, but either a prefix or an asn must be present
