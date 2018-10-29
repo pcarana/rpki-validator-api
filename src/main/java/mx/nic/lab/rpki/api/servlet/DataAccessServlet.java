@@ -1,11 +1,7 @@
 package mx.nic.lab.rpki.api.servlet;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-
 import javax.servlet.http.HttpServletRequest;
 
-import mx.nic.lab.rpki.api.exception.BadRequestException;
 import mx.nic.lab.rpki.api.exception.HttpException;
 import mx.nic.lab.rpki.api.exception.NotFoundException;
 import mx.nic.lab.rpki.api.result.ApiResult;
@@ -49,14 +45,6 @@ public abstract class DataAccessServlet<T extends DAO> extends ApiServlet {
 		if (dao == null) {
 			throw new NotFoundException();
 		}
-
-		// Validate encoding
-		try {
-			URLDecoder.decode(request.getRequestURI(), "UTF-8");
-		} catch (UnsupportedEncodingException e) {
-			throw new BadRequestException("#{error.notUtfEncoded}", e);
-		}
-
 		return dao;
 	}
 

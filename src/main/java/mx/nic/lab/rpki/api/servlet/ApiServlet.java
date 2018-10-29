@@ -1,6 +1,8 @@
 package mx.nic.lab.rpki.api.servlet;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -123,6 +125,12 @@ public abstract class ApiServlet extends HttpServlet {
 			throws ServletException, IOException {
 		ApiResult result;
 		try {
+			// Validate encoding
+			try {
+				URLDecoder.decode(req.getRequestURI(), "UTF-8");
+			} catch (UnsupportedEncodingException e) {
+				throw new BadRequestException("#{error.notUtfEncoded}", e);
+			}
 			// Validate supported methods
 			if (getSupportedRequestMethods() == null || !getSupportedRequestMethods().contains(requestMethod)) {
 				throw new MethodNotAllowedException();
