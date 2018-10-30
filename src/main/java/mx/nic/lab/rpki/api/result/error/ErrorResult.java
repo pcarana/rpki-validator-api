@@ -151,7 +151,7 @@ public class ErrorResult extends ApiResult {
 		boolean logWarning = true;
 		String errorMessage = null;
 		Object objectMessage = httpRequest.getAttribute(RequestDispatcher.ERROR_MESSAGE);
-		String localMessage = objectMessage != null ? objectMessage.toString() : "";
+		String localMessage = objectMessage != null ? objectMessage.toString() : " ";
 		switch (getCode()) {
 		case HttpServletResponse.SC_BAD_REQUEST:
 			errorMessage = "#{error.badRequest}";
@@ -174,7 +174,7 @@ public class ErrorResult extends ApiResult {
 			break;
 		default:
 			// At least get the description, if there's one
-			errorMessage = localMessage;
+			errorMessage = localMessage.trim();
 			break;
 		}
 		if (logWarning) {
@@ -187,7 +187,7 @@ public class ErrorResult extends ApiResult {
 	public JsonStructure toJsonStructure() {
 		JsonObjectBuilder builder = Json.createObjectBuilder();
 		addKeyValueToBuilder(builder, "code", getCode(), false);
-		addKeyValueToBuilder(builder, "message", getMessage(), true);
+		addKeyValueToBuilder(builder, "message", getMessage(), false);
 		if (getErrors() != null && !getErrors().isEmpty()) {
 			JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
 			for (ErrorData errData : getErrors()) {

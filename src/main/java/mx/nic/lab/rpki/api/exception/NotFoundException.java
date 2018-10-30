@@ -2,6 +2,8 @@ package mx.nic.lab.rpki.api.exception;
 
 import javax.servlet.http.HttpServletResponse;
 
+import mx.nic.lab.rpki.api.util.Util;
+
 /**
  * Whatever the user was trying to search was not found on this server. If the
  * server is HTTP, this errors translates into a 404.
@@ -26,7 +28,7 @@ public class NotFoundException extends HttpException {
 	private static final String DEFAULT_MSG = "#{error.notFound}";
 
 	public NotFoundException() {
-		super(CODE, DEFAULT_MSG);
+		super(CODE, Util.concatenateParamsToLabel(DEFAULT_MSG, " "));
 	}
 
 	public NotFoundException(String message) {
@@ -34,7 +36,7 @@ public class NotFoundException extends HttpException {
 	}
 
 	public NotFoundException(Throwable cause) {
-		super(CODE, DEFAULT_MSG, cause);
+		super(CODE, Util.concatenateParamsToLabel(DEFAULT_MSG, " "), cause);
 	}
 
 	public NotFoundException(String message, Throwable cause) {

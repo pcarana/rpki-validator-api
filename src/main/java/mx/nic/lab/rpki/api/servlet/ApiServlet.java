@@ -16,6 +16,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.json.JsonStructure;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -25,6 +26,7 @@ import mx.nic.lab.rpki.api.exception.BadRequestException;
 import mx.nic.lab.rpki.api.exception.HttpException;
 import mx.nic.lab.rpki.api.exception.InternalServerErrorException;
 import mx.nic.lab.rpki.api.exception.MethodNotAllowedException;
+import mx.nic.lab.rpki.api.exception.NotFoundException;
 import mx.nic.lab.rpki.api.result.ApiResult;
 import mx.nic.lab.rpki.api.result.error.ErrorResult;
 import mx.nic.lab.rpki.api.util.Util;
@@ -93,8 +95,8 @@ public abstract class ApiServlet extends HttpServlet {
 					for (int i = 1; i < values.length; i++) {
 						parameterValues.add(values[i]);
 					}
-					replacement = MessageFormat.format(replacement,
-							parameterValues.toArray(new Object[parameterValues.size()]));
+					replacement = MessageFormat
+							.format(replacement, parameterValues.toArray(new Object[parameterValues.size()])).trim();
 				}
 				replacement = "\"" + replacement + "\"";
 				jsonString = jsonString.replace(labelMatcher.group(), replacement);
@@ -158,7 +160,7 @@ public abstract class ApiServlet extends HttpServlet {
 		}
 
 		if (result == null) {
-			result = new ErrorResult(HttpServletResponse.SC_NOT_FOUND);
+			result = new ErrorResult(new NotFoundException());
 		}
 		// No code was explicitly assigned, assume an OK response
 		if (result.getCode() == 0) {
@@ -171,8 +173,9 @@ public abstract class ApiServlet extends HttpServlet {
 		resp.setContentType("application/json");
 		resp.setHeader("Access-Control-Allow-Origin", "*");
 
-		if (result.toJsonStructure() != null) {
-			String body = getLocaleJson(req.getLocale(), result.toJsonStructure().toString(), resp);
+		JsonStructure jsonResponse = result.toJsonStructure();
+		if (jsonResponse != null) {
+			String body = getLocaleJson(req.getLocale(), jsonResponse.toString(), resp);
 			resp.getWriter().print(body);
 		}
 	}
