@@ -53,7 +53,6 @@ import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.exception.ErrorCodes;
 import mx.nic.lab.rpki.db.pojo.RpkiObject;
 import mx.nic.lab.rpki.db.pojo.RpkiRepository;
-import mx.nic.lab.rpki.db.pojo.Tal;
 import mx.nic.lab.rpki.db.pojo.ValidationRun;
 import mx.nic.lab.rpki.db.util.Sha256;
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject;
@@ -71,7 +70,7 @@ public class RpkiRepositoryValidationService extends ValidationService {
 
 	public static void validateRsyncRepositories(Long talId, ValidationRun validationRun) {
 		logger.log(Level.INFO, "Validating repositories related to TAL " + talId);
-		Set<Tal> affectedTrustAnchors = new HashSet<>();
+		Set<Long> affectedTrustAnchors = new HashSet<>();
 		final Map<String, RpkiObject> objectsBySha256 = new HashMap<>();
 		final Map<URI, RpkiRepository> fetchedLocations = new HashMap<>();
 		Stream<RpkiRepository> repositories = null;
@@ -87,8 +86,8 @@ public class RpkiRepositoryValidationService extends ValidationService {
 						ValidationResult::addAll);
 
 		validationRun.completeWith(results);
-		affectedTrustAnchors.forEach((trustAnchor) -> {
-			CertificateTreeValidationService.validate(trustAnchor.getId(), validationRun);
+		affectedTrustAnchors.forEach((trustAnchorId) -> {
+			CertificateTreeValidationService.validate(trustAnchorId, validationRun);
 		});
 
 		// Log Info about the validation
@@ -96,7 +95,7 @@ public class RpkiRepositoryValidationService extends ValidationService {
 				+ validationRun.getTalId());
 	}
 
-	private static ValidationResult processRsyncRepository(Set<Tal> affectedTrustAnchors, ValidationRun validationRun,
+	private static ValidationResult processRsyncRepository(Set<Long> affectedTrustAnchors, ValidationRun validationRun,
 			Map<URI, RpkiRepository> fetchedLocations, Map<String, RpkiObject> objectsBySha256,
 			RpkiRepository repository) {
 
@@ -125,7 +124,9 @@ public class RpkiRepositoryValidationService extends ValidationService {
 			validationResult.error(ErrorCodes.RSYNC_REPOSITORY_IO, e.toString(), ExceptionUtils.getStackTrace(e));
 		}
 
-		affectedTrustAnchors.addAll(repository.getTrustAnchors());
+		repository.getTrustAnchors().forEach((tal) -> {
+			affectedTrustAnchors.add(tal.getId());
+		});
 		fetchedLocations.put(URI.create(repository.getLocationUri()), repository);
 
 		return validationResult;
