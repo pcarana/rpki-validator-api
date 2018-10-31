@@ -28,6 +28,7 @@ import mx.nic.lab.rpki.api.exception.TrustAnchorExtractorException;
 import mx.nic.lab.rpki.db.pojo.PagingParameters;
 import mx.nic.lab.rpki.db.pojo.Tal;
 import mx.nic.lab.rpki.db.pojo.TalUri;
+import net.ripe.rpki.commons.rsync.Command;
 
 /**
  * Utilery class
@@ -254,6 +255,21 @@ public class Util {
 			throw new TrustAnchorExtractorException(
 					"failed to load trust anchor locator " + file + ": " + e.getMessage(), e);
 		}
+	}
+
+	/**
+	 * Creates and executes the command (with optional arguments) using the
+	 * {@link Command} object
+	 * 
+	 * @param commandWArgs
+	 *            List including the command to execute and the args used by the
+	 *            command
+	 * @return A {@link Command} that holds data about the command execution result
+	 */
+	public static Command createAndExecCommand(List<String> commandWArgs) {
+		Command cmd = new Command(commandWArgs);
+		cmd.execute();
+		return cmd;
 	}
 
 	/**

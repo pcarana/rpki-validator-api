@@ -14,7 +14,9 @@ import java.util.Properties;
 
 import org.quartz.CronExpression;
 
+import mx.nic.lab.rpki.api.util.Util;
 import mx.nic.lab.rpki.db.exception.InitializationException;
+import net.ripe.rpki.commons.rsync.Command;
 
 /**
  * Main configuration for the API
@@ -31,6 +33,10 @@ public class ApiConfiguration {
 	private static final String TALS_LOCATION_KEY = "tals.location";
 	private static final String TRUST_ANCHOR_VALIDATION_SCHEDULE_KEY = "trust.anchor.validation.schedule";
 	private static final String RPKI_OBJECT_CLEANUP_INTERVAL_KEY = "rpki.object.cleanup.grace.duration";
+	private static final String VALIDATOR_COMMAND_KEY = "validator.command";
+	private static final String VALIDATOR_ARG_HELP_KEY = "validator.arg.help";
+	private static final String VALIDATOR_ARG_SYNC_TAL_KEY = "validator.arg.sync.tal";
+	private static final String VALIDATOR_ARG_SYNC_TAL_OPTS_KEY = "validator.arg.sync.tal.opts";
 
 	// Properties to configure
 	private static String serverLanguage;
@@ -39,6 +45,10 @@ public class ApiConfiguration {
 	private static String talsLocation;
 	private static String trustAnchorValidationSchedule;
 	private static String rpkiObjectCleanupInterval;
+	private static String validatorCommand;
+	private static String validatorArgHelp;
+	private static String validatorArgSyncTal;
+	private static String validatorArgSyncTalOpts;
 
 	private ApiConfiguration() {
 		// No code
@@ -119,6 +129,43 @@ public class ApiConfiguration {
 			if (!isValidDuration(rpkiObjectCleanupInterval, exceptions)) {
 				invalidProperties.add(RPKI_OBJECT_CLEANUP_INTERVAL_KEY);
 			}
+		}
+
+		if (isPropertyNullOrEmpty(VALIDATOR_COMMAND_KEY)) {
+			invalidProperties.add(VALIDATOR_COMMAND_KEY);
+		} else {
+			validatorCommand = systemProperties.getProperty(VALIDATOR_COMMAND_KEY).trim();
+		}
+
+		if (isPropertyNullOrEmpty(VALIDATOR_ARG_HELP_KEY)) {
+			invalidProperties.add(VALIDATOR_ARG_HELP_KEY);
+		} else {
+			validatorArgHelp = systemProperties.getProperty(VALIDATOR_ARG_HELP_KEY).trim();
+			// Test the command with the 'help' argument
+			if (validatorCommand != null && !validatorCommand.isEmpty()) {
+				List<String> command = new ArrayList<>();
+				command.add(validatorCommand);
+				command.add(validatorArgHelp);
+				Command exec = Util.createAndExecCommand(command);
+				if (exec.getExitStatus() != 0) {
+					invalidProperties.add(VALIDATOR_COMMAND_KEY);
+					invalidProperties.add(VALIDATOR_ARG_HELP_KEY);
+					exceptions.add(new IllegalArgumentException("The validator help command couldn't be executed, "
+							+ "check either permissions or the path so that the command can be executed"));
+					exceptions.add(exec.getException());
+				}
+			}
+		}
+
+		if (isPropertyNullOrEmpty(VALIDATOR_ARG_SYNC_TAL_KEY)) {
+			invalidProperties.add(VALIDATOR_ARG_SYNC_TAL_KEY);
+		} else {
+			validatorArgSyncTal = systemProperties.getProperty(VALIDATOR_ARG_SYNC_TAL_KEY).trim();
+		}
+
+		// Optional configuration
+		if (!isPropertyNullOrEmpty(VALIDATOR_ARG_SYNC_TAL_OPTS_KEY)) {
+			validatorArgSyncTalOpts = systemProperties.getProperty(VALIDATOR_ARG_SYNC_TAL_OPTS_KEY).trim();
 		}
 
 		if (!invalidProperties.isEmpty()) {
@@ -224,5 +271,21 @@ public class ApiConfiguration {
 
 	public static String getRpkiObjectCleanupInterval() {
 		return rpkiObjectCleanupInterval;
+	}
+
+	public static String getValidatorCommand() {
+		return validatorCommand;
+	}
+
+	public static String getValidatorArgHelp() {
+		return validatorArgHelp;
+	}
+
+	public static String getValidatorArgSyncTal() {
+		return validatorArgSyncTal;
+	}
+
+	public static String getValidatorArgSyncTalOpts() {
+		return validatorArgSyncTalOpts;
 	}
 }
