@@ -36,7 +36,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class RsyncUtils {
-	public static final int DEFAULT_RSYNC_PORT = 873;
 
 	private RsyncUtils() {
 	}
