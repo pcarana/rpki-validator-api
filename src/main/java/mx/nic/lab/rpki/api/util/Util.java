@@ -167,22 +167,24 @@ public class Util {
 		PagingParameters pagingParameters = new PagingParameters();
 		Integer maxResponseResults = ApiConfiguration.getMaxResponseResults();
 		if (rcvdLimit != null) {
-			Integer intLimit = null;
+			int intLimit;
 			try {
 				intLimit = Integer.parseInt(rcvdLimit);
 			} catch (NumberFormatException e) {
 				throw new BadRequestException(
 						Util.concatenateParamsToLabel("#{error.invalid.dataType}", LIMIT, "integer"));
 			}
-			// Only values greater than 0 are accepted
+			// Only values greater than 0 are accepted, the 0 value (no limit) can't be used
+			// by the client
 			if (intLimit < 1) {
 				throw new BadRequestException(Util.concatenateParamsToLabel("#{error.paging.minValue}", LIMIT, "1"));
 			}
-			// If greater than max, use the max limit
-			if (intLimit > maxResponseResults) {
-				intLimit = maxResponseResults;
+			// The limit isn't greater than the max (considering the 0 means 'no limit')
+			if (intLimit <= maxResponseResults || maxResponseResults == 0) {
+				pagingParameters.setLimit(intLimit);
+			} else {
+				pagingParameters.setLimit(maxResponseResults);
 			}
-			pagingParameters.setLimit(intLimit);
 		} else {
 			pagingParameters.setLimit(maxResponseResults);
 		}

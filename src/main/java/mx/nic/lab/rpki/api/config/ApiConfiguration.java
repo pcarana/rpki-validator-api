@@ -89,6 +89,11 @@ public class ApiConfiguration {
 		} else {
 			try {
 				maxResponseResults = Integer.parseInt(systemProperties.getProperty(MAX_RESPONSE_RESULTS_KEY).trim());
+				if (maxResponseResults < 0) {
+					invalidProperties.add(MAX_RESPONSE_RESULTS_KEY);
+					exceptions.add(new IllegalArgumentException(
+							MAX_RESPONSE_RESULTS_KEY + " must be greater than or equal to zero"));
+				}
 			} catch (NumberFormatException e) {
 				invalidProperties.add(MAX_RESPONSE_RESULTS_KEY);
 				exceptions.add(e);

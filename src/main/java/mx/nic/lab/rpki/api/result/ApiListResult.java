@@ -39,12 +39,14 @@ public abstract class ApiListResult<T extends ApiObject> extends ApiResult {
 		builder.add("results", resultToJsonStructure());
 		builder.add("found", listResult.getTotalFound());
 		builder.add("returned", listResult.getResults().size());
-		JsonObjectBuilder pageBuilder = Json.createObjectBuilder();
-		pageBuilder.add("limit", pagingParameters.getLimit());
-		if (pagingParameters.getOffset() > -1) {
-			pageBuilder.add("offset", pagingParameters.getOffset());
+		if (pagingParameters.getLimit() > 0) {
+			JsonObjectBuilder pageBuilder = Json.createObjectBuilder();
+			pageBuilder.add("limit", pagingParameters.getLimit());
+			if (pagingParameters.getOffset() > -1) {
+				pageBuilder.add("offset", pagingParameters.getOffset());
+			}
+			builder.add("page", pageBuilder);
 		}
-		builder.add("page", pageBuilder);
 		return builder.build();
 	}
 
