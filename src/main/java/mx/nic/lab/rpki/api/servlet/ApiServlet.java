@@ -49,8 +49,8 @@ public abstract class ApiServlet extends HttpServlet {
 	 * List of available bundles ordered by priority (if the first has the searched
 	 * key, then return that value; otherwise keep searching at the next, and so on)
 	 */
-	private static final List<String> bundles = Arrays.asList("META-INF/labels/errors", "validation",
-			"META-INF/labels/validation");
+	private static final List<String> bundles = Arrays.asList("labels/errors", "validation",
+			"labels/validation");
 
 	private static final Logger logger = Logger.getLogger(ApiServlet.class.getName());
 
