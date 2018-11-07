@@ -3,18 +3,11 @@ package mx.nic.lab.rpki.api.servlet;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.MissingResourceException;
-import java.util.ResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.json.JsonStructure;
 import javax.servlet.ServletException;
@@ -46,13 +39,29 @@ public abstract class ApiServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 
 	/**
-	 * List of available bundles ordered by priority (if the first has the searched
-	 * key, then return that value; otherwise keep searching at the next, and so on)
+	 * Class logger
 	 */
-	private static final List<String> bundles = Arrays.asList("labels/errors", "validation",
-			"labels/validation");
-
 	private static final Logger logger = Logger.getLogger(ApiServlet.class.getName());
+
+	@Override
+	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		handleRequest(RequestMethod.GET, req, resp);
+	}
+
+	@Override
+	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		handleRequest(RequestMethod.POST, req, resp);
+	}
+
+	@Override
+	protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		handleRequest(RequestMethod.PUT, req, resp);
+	}
+
+	@Override
+	protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		handleRequest(RequestMethod.DELETE, req, resp);
+	}
 
 	/**
 	 * Get the complete JSON string, replacing all the labels "#{label}" with its
@@ -76,40 +85,8 @@ public abstract class ApiServlet extends HttpServlet {
 	 * @return JSON string with labels replaced
 	 */
 	private String getLocaleJson(Locale locale, String jsonString, HttpServletResponse response) {
-		if (jsonString == null) {
-			return jsonString;
-		}
-		// Match by groups, the 4th group determines the key to lookup at the bundles
-		// and the parameters values (if they are present)
-		String labelPattern = "(\")((\\#\\{)([^\"]+)(\\}))(\")";
-		Matcher labelMatcher = Pattern.compile(labelPattern).matcher(jsonString);
-		try {
-			String replacement;
-			while (labelMatcher.find()) {
-				String[] values = labelMatcher.group(4).split("\\}\\{");
-				String key = values[0];
-				replacement = getValueFromBundles(key, locale);
-				// Check for parameters and store its value
-				if (values.length > 1) {
-					List<String> parameterValues = new ArrayList<>();
-					for (int i = 1; i < values.length; i++) {
-						parameterValues.add(values[i]);
-					}
-					replacement = MessageFormat
-							.format(replacement, parameterValues.toArray(new Object[parameterValues.size()])).trim();
-				}
-				replacement = "\"" + replacement + "\"";
-				jsonString = jsonString.replace(labelMatcher.group(), replacement);
-			}
-			response.setHeader("Content-Language", locale.toLanguageTag());
-		} catch (MissingResourceException e) {
-			// Not even a default bundle was found (that's bad), this is an internal error,
-			// replace the labels with empty strings and log
-			logger.log(Level.SEVERE, "Error loading bundle, still responding to the request", e);
-			while (labelMatcher.find()) {
-				jsonString = jsonString.replace(labelMatcher.group(), "\"\"");
-			}
-		}
+		jsonString = Util.getJsonWithLocale(locale, jsonString);
+		response.setHeader("Content-Language", locale.toLanguageTag());
 		return jsonString;
 	}
 
@@ -178,73 +155,6 @@ public abstract class ApiServlet extends HttpServlet {
 			String body = getLocaleJson(req.getLocale(), jsonResponse.toString(), resp);
 			resp.getWriter().print(body);
 		}
-	}
-
-	/**
-	 * Search the indicated <code>key</code> at the configured bundles, throws a
-	 * {@link MissingResourceException} if nothing was found
-	 * 
-	 * @param key
-	 * @param locale
-	 * @return
-	 */
-	private String getValueFromBundles(String key, Locale locale) {
-		String found;
-		for (String location : bundles) {
-			found = getValueFromSingleBundle(location, key, locale);
-			if (found != null) {
-				return found;
-			}
-		}
-		throw new MissingResourceException("None of the bundles " + bundles + " had the key '" + key + "'",
-				String.class.getName(), key);
-	}
-
-	/**
-	 * Search the <code>key</code> at the bundle loaded from the
-	 * <code>location</code>, if the bundle with the <code>locale</code> isn't found
-	 * then try to get it with the default locale; if nothing is found, return
-	 * <code>null</code>
-	 * 
-	 * @param location
-	 * @param key
-	 * @param locale
-	 * @return
-	 */
-	private String getValueFromSingleBundle(String location, String key, Locale locale) {
-		try {
-			ResourceBundle bundle = ResourceBundle.getBundle(location, locale);
-			if (bundle.containsKey(key)) {
-				return bundle.getString(key);
-			}
-		} catch (MissingResourceException e) {
-			// Fallback: if no bundle was found, try to use the default
-			if (!locale.equals(Locale.getDefault())) {
-				return getValueFromSingleBundle(location, key, Locale.getDefault());
-			}
-		}
-		// Nothing found return null
-		return null;
-	}
-
-	@Override
-	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-		handleRequest(RequestMethod.GET, req, resp);
-	}
-
-	@Override
-	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-		handleRequest(RequestMethod.POST, req, resp);
-	}
-
-	@Override
-	protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-		handleRequest(RequestMethod.PUT, req, resp);
-	}
-
-	@Override
-	protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-		handleRequest(RequestMethod.DELETE, req, resp);
 	}
 
 	/**

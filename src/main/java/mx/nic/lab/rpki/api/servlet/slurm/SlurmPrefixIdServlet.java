@@ -1,8 +1,6 @@
 package mx.nic.lab.rpki.api.servlet.slurm;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -11,7 +9,6 @@ import java.util.Map;
 
 import javax.json.Json;
 import javax.json.JsonException;
-import javax.json.JsonNumber;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 import javax.servlet.annotation.WebServlet;
@@ -27,11 +24,11 @@ import mx.nic.lab.rpki.api.result.EmptyResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmPrefixListResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmPrefixSingleResult;
 import mx.nic.lab.rpki.api.servlet.RequestMethod;
+import mx.nic.lab.rpki.api.slurm.SlurmManager;
 import mx.nic.lab.rpki.api.util.Util;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.exception.ValidationError;
 import mx.nic.lab.rpki.db.exception.ValidationException;
-import mx.nic.lab.rpki.db.pojo.ApiObject;
 import mx.nic.lab.rpki.db.pojo.ListResult;
 import mx.nic.lab.rpki.db.pojo.PagingParameters;
 import mx.nic.lab.rpki.db.pojo.SlurmPrefix;
@@ -262,7 +259,6 @@ public class SlurmPrefixIdServlet extends SlurmPrefixServlet {
 	 * @throws HttpException
 	 */
 	private SlurmPrefix getSlurmPrefixFromBody(HttpServletRequest request, String type) throws HttpException {
-		SlurmPrefix slurmPrefix = new SlurmPrefix();
 		JsonObject object = null;
 		try (JsonReader reader = Json.createReader(request.getReader())) {
 			object = reader.readObject();
@@ -271,88 +267,11 @@ public class SlurmPrefixIdServlet extends SlurmPrefixServlet {
 		} catch (JsonException | IllegalStateException e) {
 			throw new BadRequestException("#{error.invalidJson}");
 		}
-		// Check for extra keys (invalid keys)
-		List<String> invalidKeys = new ArrayList<>();
-		for (String key : object.keySet()) {
-			if (!key.matches("(prefix|asn|maxPrefixLength|comment)")) {
-				invalidKeys.add(key);
-			}
-		}
-		if (!invalidKeys.isEmpty()) {
-			throw new BadRequestException(
-					Util.concatenateParamsToLabel("#{error.invalid.keys}", invalidKeys.toString()));
-		}
-		String prefixRcv = null;
 		try {
-			prefixRcv = object.getString("prefix");
-		} catch (NullPointerException npe) {
-			if (type.equals(SlurmPrefix.TYPE_ASSERTION)) {
-				throw new BadRequestException("#{error.slurm.prefix.prefixRequired}");
-			}
-		} catch (ClassCastException cce) {
-			throw new BadRequestException(
-					Util.concatenateParamsToLabel("#{error.invalid.dataType}", "prefix", "String"));
+			return SlurmManager.getAndvalidatePrefix(object, type);
+		} catch (IllegalArgumentException e) {
+			throw new BadRequestException(e.getMessage());
 		}
-		if (prefixRcv != null) {
-			String[] prefixArr = prefixRcv.split("/");
-			if (prefixArr.length != 2) {
-				throw new BadRequestException(
-						Util.concatenateParamsToLabel("#{error.invalid.format}", "prefix", "[prefix]/[prefix_length]"));
-			}
-
-			try {
-				InetAddress prefixAddress = InetAddress.getByName(prefixArr[0]);
-				slurmPrefix.setStartPrefix(prefixAddress.getAddress());
-				slurmPrefix.setPrefixText(prefixAddress.getHostAddress());
-			} catch (UnknownHostException e) {
-				throw new BadRequestException("#{error.slurm.prefix.invalid}");
-			}
-			try {
-				int prefixLength = Integer.valueOf(prefixArr[1]);
-				slurmPrefix.setPrefixLength(prefixLength);
-			} catch (NumberFormatException nfe) {
-				throw new BadRequestException(
-						Util.concatenateParamsToLabel("#{error.invalid.dataType}", "prefix length", "Number"));
-			}
-		}
-		try {
-			// There's no "getLong" method
-			JsonNumber number = object.getJsonNumber("asn");
-			if (number != null) {
-				slurmPrefix.setAsn(number.longValueExact());
-			} else if (type.equals(SlurmPrefix.TYPE_ASSERTION)) {
-				throw new BadRequestException("#{error.slurm.asnRequired}");
-			} else if (slurmPrefix.getStartPrefix() == null) {
-				// In a Filter is optional, but either a prefix or an asn must be present
-				throw new BadRequestException("#{error.slurm.prefix.prefixOrAsnRequired}");
-			}
-		} catch (ClassCastException cce) {
-			throw new BadRequestException(Util.concatenateParamsToLabel("#{error.invalid.dataType}", "asn", "Number"));
-		} catch (ArithmeticException e) {
-			throw new BadRequestException(Util.concatenateParamsToLabel("#{error.slurm.asnFormat}",
-					ApiObject.ASN_MIN_VALUE, ApiObject.ASN_MAX_VALUE));
-		}
-
-		try {
-			slurmPrefix.setPrefixMaxLength(object.getInt("maxPrefixLength"));
-		} catch (NullPointerException npe) {
-			// Optional in both cases, do nothing
-		} catch (ClassCastException cce) {
-			throw new BadRequestException(
-					Util.concatenateParamsToLabel("#{error.invalid.dataType}", "maxPrefixLength", "Number"));
-		}
-
-		try {
-			slurmPrefix.setComment(object.getString("comment"));
-		} catch (NullPointerException npe) {
-			// It's RECOMMENDED, so expect it as required in both cases
-			throw new BadRequestException("#{error.slurm.commentRequired}");
-		} catch (ClassCastException cce) {
-			throw new BadRequestException(
-					Util.concatenateParamsToLabel("#{error.invalid.dataType}", "comment", "String"));
-		}
-
-		return slurmPrefix;
 	}
 
 	@Override

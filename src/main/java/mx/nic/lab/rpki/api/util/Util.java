@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -13,7 +14,14 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.MissingResourceException;
+import java.util.ResourceBundle;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -40,6 +48,12 @@ public class Util {
 	 * Common format to return dates as String
 	 */
 	public static final String DATE_FORMAT = "yyyy-MM-dd'T'HHmmss.SSS'Z'";
+
+	/**
+	 * List of available bundles ordered by priority (if the first has the searched
+	 * key, then return that value; otherwise keep searching at the next, and so on)
+	 */
+	private static final List<String> bundles = Arrays.asList("labels/errors", "validation", "labels/validation");
 
 	/**
 	 * Return the additional path info of a request URI as a String List, i.e. If
@@ -260,6 +274,61 @@ public class Util {
 	}
 
 	/**
+	 * Get the complete JSON string, replacing all the labels "#{label}" with its
+	 * corresponding locale value. If there's no bundle available or no property
+	 * defined, an empty String is used to replace the corresponding label.<br>
+	 * <br>
+	 * If the label has parameters concatenated (e.g. #{label}{param1}{param2} see
+	 * more at
+	 * {@link mx.nic.lab.rpki.api.util.Util#concatenateParamsToLabel(String, Object...)})
+	 * then take those values into account to replace any parameters indicated at
+	 * the label. The order of the parameter affects the replacement order, so the
+	 * parameter <code>{0}</code> will be replaced with the first param value, the
+	 * <code>{1}</code> with the second, and so on...
+	 * 
+	 * @param locale
+	 * @param jsonString
+	 * @return JSON string with labels replaced
+	 */
+	public static String getJsonWithLocale(Locale locale, String jsonString) {
+		if (jsonString == null) {
+			return jsonString;
+		}
+		// Match by groups, the 4th group determines the key to lookup at the bundles
+		// and the parameters values (if they are present)
+		String labelPattern = "(\")((\\#\\{)([^\"]+)(\\}))(\")";
+		Matcher labelMatcher = Pattern.compile(labelPattern).matcher(jsonString);
+		try {
+			String replacement;
+			while (labelMatcher.find()) {
+				String[] values = labelMatcher.group(4).split("\\}\\{");
+				String key = values[0];
+				replacement = getValueFromBundles(key, locale);
+				// Check for parameters and store its value
+				if (values.length > 1) {
+					List<String> parameterValues = new ArrayList<>();
+					for (int i = 1; i < values.length; i++) {
+						parameterValues.add(values[i]);
+					}
+					replacement = MessageFormat
+							.format(replacement, parameterValues.toArray(new Object[parameterValues.size()])).trim();
+				}
+				replacement = "\"" + replacement + "\"";
+				jsonString = jsonString.replace(labelMatcher.group(), replacement);
+			}
+
+		} catch (MissingResourceException e) {
+			// Not even a default bundle was found (that's bad), this is an internal error,
+			// replace the labels with empty strings and log
+			Logger.getGlobal().log(Level.SEVERE, "Error loading bundle, still replacing labels", e);
+			while (labelMatcher.find()) {
+				jsonString = jsonString.replace(labelMatcher.group(), "\"\"");
+			}
+		}
+		return jsonString;
+	}
+
+	/**
 	 * Creates and executes the command (with optional arguments) using the
 	 * {@link Command} object
 	 * 
@@ -312,5 +381,52 @@ public class Util {
 
 	private static boolean looksLikeUri(String string) {
 		return string.startsWith("rsync://") || string.startsWith("https://") || string.startsWith("http://");
+	}
+
+	/**
+	 * Search the indicated <code>key</code> at the configured bundles, throws a
+	 * {@link MissingResourceException} if nothing was found
+	 * 
+	 * @param key
+	 * @param locale
+	 * @return
+	 */
+	private static String getValueFromBundles(String key, Locale locale) {
+		String found;
+		for (String location : bundles) {
+			found = getValueFromSingleBundle(location, key, locale);
+			if (found != null) {
+				return found;
+			}
+		}
+		throw new MissingResourceException("None of the bundles " + bundles + " had the key '" + key + "'",
+				String.class.getName(), key);
+	}
+
+	/**
+	 * Search the <code>key</code> at the bundle loaded from the
+	 * <code>location</code>, if the bundle with the <code>locale</code> isn't found
+	 * then try to get it with the default locale; if nothing is found, return
+	 * <code>null</code>
+	 * 
+	 * @param location
+	 * @param key
+	 * @param locale
+	 * @return
+	 */
+	private static String getValueFromSingleBundle(String location, String key, Locale locale) {
+		try {
+			ResourceBundle bundle = ResourceBundle.getBundle(location, locale);
+			if (bundle.containsKey(key)) {
+				return bundle.getString(key);
+			}
+		} catch (MissingResourceException e) {
+			// Fallback: if no bundle was found, try to use the default
+			if (!locale.equals(Locale.getDefault())) {
+				return getValueFromSingleBundle(location, key, Locale.getDefault());
+			}
+		}
+		// Nothing found return null
+		return null;
 	}
 }

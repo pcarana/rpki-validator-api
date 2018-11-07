@@ -36,19 +36,18 @@ public class SlurmResult extends ApiSingleResult<Slurm> {
 		JsonArrayBuilder prefixAssertions = Json.createArrayBuilder();
 		JsonArrayBuilder bgpsecFilters = Json.createArrayBuilder();
 		JsonArrayBuilder bgpsecAssertions = Json.createArrayBuilder();
-		slurm.getPrefixes().forEach(prefix -> {
-			if (prefix.getType().equals(SlurmPrefix.TYPE_FILTER)) {
-				prefixFilters.add(getFormattedPrefix(prefix));
-			} else if (prefix.getType().equals(SlurmPrefix.TYPE_ASSERTION)) {
-				prefixAssertions.add(getFormattedPrefix(prefix));
-			}
+
+		slurm.getValidationOutputFilters().getPrefixes().forEach((prefix) -> {
+			prefixFilters.add(getFormattedPrefix(prefix));
 		});
-		slurm.getBgpsecs().forEach(bgpsec -> {
-			if (bgpsec.getType().equals(SlurmBgpsec.TYPE_FILTER)) {
-				bgpsecFilters.add(getFormattedBgpsec(bgpsec));
-			} else if (bgpsec.getType().equals(SlurmBgpsec.TYPE_ASSERTION)) {
-				bgpsecAssertions.add(getFormattedBgpsec(bgpsec));
-			}
+		slurm.getValidationOutputFilters().getBgpsecs().forEach((bgpsec) -> {
+			bgpsecFilters.add(getFormattedBgpsec(bgpsec));
+		});
+		slurm.getLocallyAddedAssertions().getPrefixes().forEach((prefix) -> {
+			prefixAssertions.add(getFormattedPrefix(prefix));
+		});
+		slurm.getLocallyAddedAssertions().getBgpsecs().forEach((bgpsec) -> {
+			bgpsecAssertions.add(getFormattedBgpsec(bgpsec));
 		});
 
 		validationOutputFilters.add("prefixFilters", prefixFilters);
@@ -57,7 +56,7 @@ public class SlurmResult extends ApiSingleResult<Slurm> {
 		locallyAddedAssertions.add("prefixAssertions", prefixAssertions);
 		locallyAddedAssertions.add("bgpsecAssertions", bgpsecAssertions);
 
-		slurmBuilder.add("slurmVersion", 1);
+		slurmBuilder.add("slurmVersion", slurm.getSlurmVersion());
 		slurmBuilder.add("validationOutputFilters", validationOutputFilters);
 		slurmBuilder.add("locallyAddedAssertions", locallyAddedAssertions);
 

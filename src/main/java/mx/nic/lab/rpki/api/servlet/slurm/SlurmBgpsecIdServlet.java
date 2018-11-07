@@ -1,24 +1,18 @@
 package mx.nic.lab.rpki.api.servlet.slurm;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import javax.json.Json;
 import javax.json.JsonException;
-import javax.json.JsonNumber;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.bouncycastle.util.encoders.DecoderException;
-import org.bouncycastle.util.encoders.Hex;
 
 import mx.nic.lab.rpki.api.exception.BadRequestException;
 import mx.nic.lab.rpki.api.exception.ConflictException;
@@ -29,11 +23,10 @@ import mx.nic.lab.rpki.api.result.EmptyResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmBgpsecListResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmBgpsecSingleResult;
 import mx.nic.lab.rpki.api.servlet.RequestMethod;
-import mx.nic.lab.rpki.api.util.CMSUtil;
+import mx.nic.lab.rpki.api.slurm.SlurmManager;
 import mx.nic.lab.rpki.api.util.Util;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.exception.ValidationException;
-import mx.nic.lab.rpki.db.pojo.ApiObject;
 import mx.nic.lab.rpki.db.pojo.ListResult;
 import mx.nic.lab.rpki.db.pojo.PagingParameters;
 import mx.nic.lab.rpki.db.pojo.SlurmBgpsec;
@@ -248,7 +241,6 @@ public class SlurmBgpsecIdServlet extends SlurmBgpsecServlet {
 	 * @throws HttpException
 	 */
 	private SlurmBgpsec getSlurmBgpsecFromBody(HttpServletRequest request, String type) throws HttpException {
-		SlurmBgpsec slurmBgpsec = new SlurmBgpsec();
 		JsonObject object = null;
 		try (JsonReader reader = Json.createReader(request.getReader())) {
 			object = reader.readObject();
@@ -257,110 +249,11 @@ public class SlurmBgpsecIdServlet extends SlurmBgpsecServlet {
 		} catch (JsonException | IllegalStateException e) {
 			throw new BadRequestException("#{error.invalidJson}");
 		}
-		// Check for extra keys (invalid keys)
-		List<String> invalidKeys = new ArrayList<>();
-		for (String key : object.keySet()) {
-			if (!key.matches("(asn|SKI|routerPublicKey|comment)")) {
-				invalidKeys.add(key);
-			}
-		}
-		if (!invalidKeys.isEmpty()) {
-			throw new BadRequestException(
-					Util.concatenateParamsToLabel("#{error.invalid.keys}", invalidKeys.toString()));
-		}
-
 		try {
-			// There's no "getLong" method
-			JsonNumber number = object.getJsonNumber("asn");
-			if (number != null) {
-				slurmBgpsec.setAsn(number.longValueExact());
-			} else if (type.equals(SlurmBgpsec.TYPE_ASSERTION)) {
-				throw new BadRequestException("#{error.slurm.asnRequired}");
-			}
-		} catch (ClassCastException cce) {
-			throw new BadRequestException(Util.concatenateParamsToLabel("#{error.invalid.dataType}", "asn", "Number"));
-		} catch (ArithmeticException e) {
-			throw new BadRequestException(Util.concatenateParamsToLabel("#{error.slurm.asnFormat}",
-					ApiObject.ASN_MIN_VALUE, ApiObject.ASN_MAX_VALUE));
+			return SlurmManager.getAndvalidateBgpsec(object, type);
+		} catch (IllegalArgumentException e) {
+			throw new BadRequestException(e.getMessage());
 		}
-
-		try {
-			String value = object.getString("SKI");
-			// If the value is sent, it can't be an empty value
-			if (value.trim().isEmpty()) {
-				throw new BadRequestException("#{error.slurm.bgpsec.skiEmpty}");
-			}
-			slurmBgpsec.setSki(value.trim());
-		} catch (NullPointerException npe) {
-			if (type.equals(SlurmBgpsec.TYPE_ASSERTION)) {
-				throw new BadRequestException("#{error.slurm.bgpsec.skiRequired}");
-			} else if (slurmBgpsec.getAsn() == null) {
-				// In a Filter is optional, but either an asn or a SKI must be present
-				throw new BadRequestException("#{error.slurm.bgpsec.asnOrSkiRequired}");
-			}
-		} catch (ClassCastException cce) {
-			throw new BadRequestException(Util.concatenateParamsToLabel("#{error.invalid.dataType}", "SKI", "String"));
-		}
-
-		try {
-			String value = object.getString("routerPublicKey");
-			if (value.trim().isEmpty()) {
-				throw new BadRequestException("#{error.slurm.bgpsec.routerPublicKeyEmpty}");
-			}
-			slurmBgpsec.setRouterPublicKey(value.trim());
-		} catch (NullPointerException npe) {
-			if (type.equals(SlurmBgpsec.TYPE_ASSERTION)) {
-				throw new BadRequestException("#{error.slurm.bgpsec.routerPublicKeyRequired}");
-			}
-		} catch (ClassCastException cce) {
-			throw new BadRequestException(
-					Util.concatenateParamsToLabel("#{error.invalid.dataType}", "routerPublicKey", "String"));
-		}
-
-		try {
-			String value = object.getString("comment");
-			if (value.trim().isEmpty()) {
-				throw new BadRequestException("#{error.slurm.commentEmpty}");
-			}
-			slurmBgpsec.setComment(value.trim());
-		} catch (NullPointerException npe) {
-			// It's RECOMMENDED, so expect it as required in both cases
-			throw new BadRequestException("#{error.slurm.commentRequired}");
-		} catch (ClassCastException cce) {
-			throw new BadRequestException(
-					Util.concatenateParamsToLabel("#{error.invalid.dataType}", "comment", "String"));
-		}
-
-		// Check SKI and routerPublicKey are sent base64 encoded, and verify its
-		// value
-		if (slurmBgpsec.getSki() != null && !slurmBgpsec.getSki().trim().isEmpty()) {
-			try {
-				byte[] decodedSki = Base64.getDecoder().decode(slurmBgpsec.getSki().getBytes());
-				byte[] hexBytes = Hex.decode(decodedSki);
-				// Is the 160-bit SHA-1 hash (RFC 8416 section 3.3.2 citing RFC 6487 section
-				// 4.8.2)
-				if (hexBytes.length != 20) {
-					throw new BadRequestException("#{error.slurm.bgpsec.skiInvalid}");
-				}
-			} catch (IllegalArgumentException e) {
-				throw new BadRequestException(Util.concatenateParamsToLabel("#{error.slurm.bgpsec.notBase64}", "SKI"));
-			} catch (DecoderException e) {
-				throw new BadRequestException(Util.concatenateParamsToLabel("#{error.slurm.bgpsec.notHex}", "SKI"));
-			}
-		}
-
-		if (slurmBgpsec.getRouterPublicKey() != null && !slurmBgpsec.getRouterPublicKey().trim().isEmpty()) {
-			try {
-				byte[] decodedPk = Base64.getDecoder().decode(slurmBgpsec.getRouterPublicKey().getBytes());
-				if (!CMSUtil.isValidSubjectPublicKey(decodedPk)) {
-					throw new BadRequestException("#{error.slurm.bgpsec.routerPublicKeyInvalid}");
-				}
-			} catch (IllegalArgumentException e) {
-				throw new BadRequestException(
-						Util.concatenateParamsToLabel("#{error.slurm.bgpsec.notBase64}", "routerPublicKey"));
-			}
-		}
-		return slurmBgpsec;
 	}
 
 	@Override

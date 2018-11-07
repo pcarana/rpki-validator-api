@@ -12,6 +12,7 @@ import javax.servlet.ServletContextListener;
 import javax.servlet.annotation.WebListener;
 
 import mx.nic.lab.rpki.api.config.ApiConfiguration;
+import mx.nic.lab.rpki.api.slurm.SlurmManager;
 import mx.nic.lab.rpki.api.validation.MasterScheduler;
 import mx.nic.lab.rpki.db.exception.InitializationException;
 import mx.nic.lab.rpki.db.service.DataAccessService;
@@ -54,23 +55,19 @@ public class ApiInitializer implements ServletContextListener {
 		try {
 			Properties appConfig = loadConfig(CONFIGURATION_FILE, USER_CONFIGURATION_PARAM_NAME);
 			ApiConfiguration.initialize(appConfig);
-		} catch (IOException | InitializationException e) {
-			throw new IllegalArgumentException(e);
-		}
-		// Load DA configuration
-		try {
+
+			// Load DA configuration
 			Properties dataAccessConfig = loadConfig(DATA_ACCESS_FILE, USER_DATA_ACCESS_PARAM_NAME);
 			DataAccessService.initialize(dataAccessConfig);
+
+			// Load the SLURM (if configured)
+			SlurmManager.initSlurm();
+
+			// Everything is ok for now, run initial validations
+			MasterScheduler.initSchedule();
 		} catch (IOException | InitializationException e) {
 			throw new IllegalArgumentException(e);
 		}
-		// Everything is ok for now, run initial validations
-		try {
-			MasterScheduler.initSchedule();
-		} catch (InitializationException e) {
-			throw new IllegalArgumentException(e);
-		}
-
 	}
 
 	private Properties loadConfig(String baseFileName, String userPathParamName) throws IOException {

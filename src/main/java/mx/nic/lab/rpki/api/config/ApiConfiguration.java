@@ -31,6 +31,7 @@ public class ApiConfiguration {
 	private static final String MAX_RESPONSE_RESULTS_KEY = "max.response.results";
 	private static final String DOWNLOADED_REPO_LOCATION_KEY = "downloaded.repositories.location";
 	private static final String TALS_LOCATION_KEY = "tals.location";
+	private static final String SLURM_LOCATION_KEY = "slurm.location";
 	private static final String TRUST_ANCHOR_VALIDATION_SCHEDULE_KEY = "trust.anchor.validation.schedule";
 	private static final String RPKI_OBJECT_CLEANUP_INTERVAL_KEY = "rpki.object.cleanup.grace.duration";
 	private static final String VALIDATOR_COMMAND_KEY = "validator.command";
@@ -43,6 +44,7 @@ public class ApiConfiguration {
 	private static Integer maxResponseResults;
 	private static String downloadedRepositoriesLocation;
 	private static String talsLocation;
+	private static String slurmLocation;
 	private static String trustAnchorValidationSchedule;
 	private static String rpkiObjectCleanupInterval;
 	private static String validatorCommand;
@@ -104,7 +106,7 @@ public class ApiConfiguration {
 			invalidProperties.add(DOWNLOADED_REPO_LOCATION_KEY);
 		} else {
 			downloadedRepositoriesLocation = systemProperties.getProperty(DOWNLOADED_REPO_LOCATION_KEY).trim();
-			if (!isValidLocation(downloadedRepositoriesLocation, exceptions)) {
+			if (!isValidLocation(downloadedRepositoriesLocation, true, exceptions)) {
 				invalidProperties.add(DOWNLOADED_REPO_LOCATION_KEY);
 			}
 		}
@@ -113,8 +115,15 @@ public class ApiConfiguration {
 			invalidProperties.add(TALS_LOCATION_KEY);
 		} else {
 			talsLocation = systemProperties.getProperty(TALS_LOCATION_KEY).trim();
-			if (!isValidLocation(talsLocation, exceptions)) {
+			if (!isValidLocation(talsLocation, true, exceptions)) {
 				invalidProperties.add(TALS_LOCATION_KEY);
+			}
+		}
+
+		if (!isPropertyNullOrEmpty(SLURM_LOCATION_KEY)) {
+			slurmLocation = systemProperties.getProperty(SLURM_LOCATION_KEY).trim();
+			if (!isValidLocation(slurmLocation, false, exceptions)) {
+				invalidProperties.add(SLURM_LOCATION_KEY);
 			}
 		}
 
@@ -197,25 +206,30 @@ public class ApiConfiguration {
 	}
 
 	/**
-	 * Validate that the <code>location</code> is a valid path and a directory
+	 * Validate that the <code>location</code> is a valid path and a directory (if
+	 * <code>isDir</code> is <code>true</code>)
 	 * 
 	 * @param location
+	 * @param isDir
 	 * @param exceptions
 	 * @return
 	 */
-	private static boolean isValidLocation(String location, List<Exception> exceptions) {
+	private static boolean isValidLocation(String location, boolean isDir, List<Exception> exceptions) {
 		try {
 			Path validPath = Paths.get(location);
 			File validFile = validPath.toFile();
-			if (validFile.exists() && validFile.isDirectory()) {
-				return true;
+			if (isDir && !validFile.isDirectory()) {
+				throw new IllegalArgumentException(
+						"The location \"" + location + "\" isn't valid or isn't a directory");
 			}
-			exceptions.add(
-					new IllegalArgumentException("The location \"" + location + "\" isn't valid or isn't a directory"));
+			if (!isDir && !validFile.isFile()) {
+				throw new IllegalArgumentException("The location \"" + location + "\" isn't valid or isn't a file");
+			}
 		} catch (Exception e) {
 			exceptions.add(e);
+			return false;
 		}
-		return false;
+		return true;
 	}
 
 	/**
@@ -268,6 +282,10 @@ public class ApiConfiguration {
 
 	public static String getTalsLocation() {
 		return talsLocation;
+	}
+
+	public static String getSlurmLocation() {
+		return slurmLocation;
 	}
 
 	public static String getTrustAnchorValidationSchedule() {
