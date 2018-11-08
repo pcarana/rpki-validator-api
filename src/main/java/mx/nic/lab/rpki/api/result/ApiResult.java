@@ -54,8 +54,13 @@ public abstract class ApiResult {
 	 *            <code>boolean</code> to indicate if the property key permits null
 	 *            values
 	 */
+	@SuppressWarnings("rawtypes")
 	protected void addKeyValueToBuilder(JsonObjectBuilder builder, String key, Object value, boolean addNullValue) {
 		if (value != null) {
+			if (value instanceof Enum) {
+				builder.add(key, ((Enum) value).toString());
+				return;
+			}
 			if (value instanceof String) {
 				builder.add(key, (String) value);
 				return;
