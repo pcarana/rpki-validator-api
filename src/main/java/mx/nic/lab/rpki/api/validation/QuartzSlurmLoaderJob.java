@@ -28,7 +28,11 @@ public class QuartzSlurmLoaderJob implements Job {
 		if (!exceptions.isEmpty()) {
 			StringBuilder sb = new StringBuilder();
 			for (Exception e : exceptions) {
-				sb.append("[").append(e.getMessage()).append(", ").append(e.getCause()).append("] ");
+				sb.append("[").append(e.getMessage());
+				if (e.getCause() != null) {
+					sb.append(", ").append(e.getCause());
+				}
+				sb.append("] ");
 			}
 			throw new JobExecutionException("Error loading or using the SLURM at " + SlurmManager.getSlurmLocationFile()
 					+ ". " + sb.toString());
