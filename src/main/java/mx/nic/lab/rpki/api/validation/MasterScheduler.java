@@ -6,6 +6,7 @@ import java.util.logging.Logger;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
+import org.quartz.SimpleScheduleBuilder;
 import org.quartz.TriggerBuilder;
 import org.quartz.impl.StdSchedulerFactory;
 
@@ -47,6 +48,21 @@ public class MasterScheduler {
 		}
 
 		try {
+			scheduler.addJob(QuartzSlurmLoaderJob.buildJob(), true);
+		} catch (SchedulerException e) {
+			throw new InitializationException("Error registering SLURM validation job", e);
+		}
+
+		try {
+			scheduler.scheduleJob(QuartzSlurmWatcherJob.buildJob(),
+					TriggerBuilder.newTrigger().startNow().withSchedule(
+							SimpleScheduleBuilder.simpleSchedule().withMisfireHandlingInstructionIgnoreMisfires())
+							.build());
+		} catch (SchedulerException e) {
+			throw new InitializationException("Error registering SLURM watcher job", e);
+		}
+
+		try {
 			scheduler.start();
 		} catch (SchedulerException e) {
 			throw new InitializationException("Error starting the scheduler", e);
@@ -57,6 +73,17 @@ public class MasterScheduler {
 			scheduler.triggerJob(QuartzTrustAnchorValidationJob.getJobKey());
 		} catch (SchedulerException e) {
 			throw new InitializationException("Error running the initial validation", e);
+		}
+	}
+
+	/**
+	 * Trigger the SLURM validation job
+	 */
+	public static void triggerSlurmValidation() {
+		try {
+			scheduler.triggerJob(QuartzSlurmLoaderJob.getJobKey());
+		} catch (SchedulerException e) {
+			logger.log(Level.SEVERE, "Error triggering SLURM validation job", e);
 		}
 	}
 

@@ -24,7 +24,7 @@ import mx.nic.lab.rpki.api.result.EmptyResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmPrefixListResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmPrefixSingleResult;
 import mx.nic.lab.rpki.api.servlet.RequestMethod;
-import mx.nic.lab.rpki.api.slurm.SlurmManager;
+import mx.nic.lab.rpki.api.slurm.SlurmUtil;
 import mx.nic.lab.rpki.api.util.Util;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.exception.ValidationError;
@@ -268,7 +268,7 @@ public class SlurmPrefixIdServlet extends SlurmPrefixServlet {
 			throw new BadRequestException("#{error.invalidJson}");
 		}
 		try {
-			return SlurmManager.getAndvalidatePrefix(object, type);
+			return SlurmUtil.getAndvalidatePrefix(object, type);
 		} catch (IllegalArgumentException e) {
 			throw new BadRequestException(e.getMessage());
 		}

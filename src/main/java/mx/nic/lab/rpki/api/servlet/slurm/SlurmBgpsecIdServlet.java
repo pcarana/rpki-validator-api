@@ -23,7 +23,7 @@ import mx.nic.lab.rpki.api.result.EmptyResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmBgpsecListResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmBgpsecSingleResult;
 import mx.nic.lab.rpki.api.servlet.RequestMethod;
-import mx.nic.lab.rpki.api.slurm.SlurmManager;
+import mx.nic.lab.rpki.api.slurm.SlurmUtil;
 import mx.nic.lab.rpki.api.util.Util;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.exception.ValidationException;
@@ -250,7 +250,7 @@ public class SlurmBgpsecIdServlet extends SlurmBgpsecServlet {
 			throw new BadRequestException("#{error.invalidJson}");
 		}
 		try {
-			return SlurmManager.getAndvalidateBgpsec(object, type);
+			return SlurmUtil.getAndvalidateBgpsec(object, type);
 		} catch (IllegalArgumentException e) {
 			throw new BadRequestException(e.getMessage());
 		}
