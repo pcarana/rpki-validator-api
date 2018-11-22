@@ -71,7 +71,7 @@ public class SlurmManager {
 			}
 			throw new InitializationException("Invalid SLURM at " + slurmLocationFile + ". " + sb.toString());
 		}
-		// The file changes will be watched by another process (not the man process)
+		// The file changes will be watched by another process (not the main process/thread)
 	}
 
 	/**
