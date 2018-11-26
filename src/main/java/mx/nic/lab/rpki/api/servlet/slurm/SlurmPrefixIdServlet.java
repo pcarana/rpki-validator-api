@@ -24,6 +24,7 @@ import mx.nic.lab.rpki.api.result.EmptyResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmPrefixListResult;
 import mx.nic.lab.rpki.api.result.slurm.SlurmPrefixSingleResult;
 import mx.nic.lab.rpki.api.servlet.RequestMethod;
+import mx.nic.lab.rpki.api.slurm.SlurmManager;
 import mx.nic.lab.rpki.api.slurm.SlurmUtil;
 import mx.nic.lab.rpki.api.util.Util;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
@@ -187,6 +188,10 @@ public class SlurmPrefixIdServlet extends SlurmPrefixServlet {
 		newSlurmPrefix.setType(type);
 		try {
 			if (!dao.create(newSlurmPrefix)) {
+				throw new ConflictException("#{error.creationIncomplete}");
+			}
+			// Try to update the SLURM file
+			if (!SlurmManager.addPrefixToFile(newSlurmPrefix)) {
 				throw new ConflictException("#{error.creationIncomplete}");
 			}
 			EmptyResult result = new EmptyResult();

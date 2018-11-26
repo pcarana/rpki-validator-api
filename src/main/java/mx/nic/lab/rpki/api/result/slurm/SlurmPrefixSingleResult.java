@@ -5,6 +5,7 @@ import javax.json.JsonObjectBuilder;
 import javax.json.JsonStructure;
 
 import mx.nic.lab.rpki.api.result.ApiSingleResult;
+import mx.nic.lab.rpki.api.slurm.SlurmUtil;
 import mx.nic.lab.rpki.db.pojo.SlurmPrefix;
 
 /**
@@ -26,19 +27,9 @@ public class SlurmPrefixSingleResult extends ApiSingleResult<SlurmPrefix> {
 		}
 		JsonObjectBuilder builder = Json.createObjectBuilder();
 		addKeyValueToBuilder(builder, "id", slurmPrefix.getId(), true);
-		addKeyValueToBuilder(builder, "asn", slurmPrefix.getAsn(), false);
-		addKeyValueToBuilder(builder, "prefix", formatPrefix(slurmPrefix), false);
-		addKeyValueToBuilder(builder, "maxPrefixLength", slurmPrefix.getPrefixMaxLength(), false);
 		addKeyValueToBuilder(builder, "type", slurmPrefix.getType(), true);
-		addKeyValueToBuilder(builder, "comment", slurmPrefix.getComment(), true);
+		builder.addAll(SlurmUtil.getPrefixBuilder(slurmPrefix));
 
 		return builder.build();
-	}
-
-	private String formatPrefix(SlurmPrefix slurmPrefix) {
-		if (slurmPrefix.getPrefixText() != null && !slurmPrefix.getPrefixText().isEmpty()) {
-			return slurmPrefix.getPrefixText() + "/" + slurmPrefix.getPrefixLength();
-		}
-		return null;
 	}
 }

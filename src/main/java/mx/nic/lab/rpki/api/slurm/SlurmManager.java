@@ -3,20 +3,29 @@ package mx.nic.lab.rpki.api.slurm;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.json.Json;
 import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
+import javax.json.JsonStructure;
+import javax.json.JsonWriter;
+import javax.json.JsonWriterFactory;
+import javax.json.stream.JsonGenerator;
 import javax.json.stream.JsonParser;
 
 import mx.nic.lab.rpki.api.config.ApiConfiguration;
@@ -71,7 +80,8 @@ public class SlurmManager {
 			}
 			throw new InitializationException("Invalid SLURM at " + slurmLocationFile + ". " + sb.toString());
 		}
-		// The file changes will be watched by another process (not the main process/thread)
+		// The file changes will be watched by another process (not the main
+		// process/thread)
 	}
 
 	/**
@@ -85,7 +95,7 @@ public class SlurmManager {
 			parser.next();
 			JsonObject jsonObject = parser.getObject();
 			if (!SlurmUtil.isValidSlurm(jsonObject, exceptions)) {
-				System.out.println("INVALID SLURM");
+				logger.log(Level.WARNING, "Invalid SLURM detected");
 				return;
 			}
 			byte[] currentChecksum = null;
@@ -326,6 +336,134 @@ public class SlurmManager {
 			result = false;
 		}
 		return result;
+	}
+
+	/**
+	 * Add a prefix to the configured SLURM file, according to its type (filter or
+	 * assertion)
+	 * 
+	 * @param slurmPrefix
+	 *            {@link SlurmPrefix} to be added
+	 * @return <code>boolean</code> to indicate success or failure of the operation
+	 */
+	public static boolean addPrefixToFile(SlurmPrefix slurmPrefix) {
+		String type = slurmPrefix.getType();
+		if (type == null) {
+			logger.log(Level.WARNING, "The SlurmPrefix type can't be null");
+			return false;
+		}
+		String rootProp;
+		String childProp;
+		if (type.equals(SlurmPrefix.TYPE_FILTER)) {
+			rootProp = "validationOutputFilters";
+			childProp = "prefixFilters";
+		} else if (type.equals(SlurmPrefix.TYPE_ASSERTION)) {
+			rootProp = "locallyAddedAssertions";
+			childProp = "prefixAssertions";
+		} else {
+			logger.log(Level.WARNING, "Unknown SlurmPrefix type");
+			return false;
+		}
+		JsonObject newObject = SlurmUtil.getPrefixBuilder(slurmPrefix).build();
+		return addObjectToFile(rootProp, childProp, newObject);
+	}
+
+	/**
+	 * Add a BGPsec rule to the configured SLURM file, according to its type (filter
+	 * or assertion)
+	 * 
+	 * @param slurmBgpsec
+	 *            {@link SlurmBgpsec} to be added
+	 * @return <code>boolean</code> to indicate success or failure of the operation
+	 */
+	public static boolean addBgpsecToFile(SlurmBgpsec slurmBgpsec) {
+		String type = slurmBgpsec.getType();
+		if (type == null) {
+			logger.log(Level.WARNING, "The SlurmBgpsec type can't be null");
+			return false;
+		}
+		String rootProp;
+		String childProp;
+		if (type.equals(SlurmBgpsec.TYPE_FILTER)) {
+			rootProp = "validationOutputFilters";
+			childProp = "bgpsecFilters";
+		} else if (type.equals(SlurmBgpsec.TYPE_ASSERTION)) {
+			rootProp = "locallyAddedAssertions";
+			childProp = "bgpsecAssertions";
+		} else {
+			logger.log(Level.WARNING, "Unknown SlurmBgpsec type");
+			return false;
+		}
+		JsonObject newObject = SlurmUtil.getBgpsecBuilder(slurmBgpsec).build();
+		return addObjectToFile(rootProp, childProp, newObject);
+	}
+
+	/**
+	 * Add the <code>jsonObject</code> (either a SLURM prefix or BGPsec) to the
+	 * configured SLURM. The object is added at the JSON array
+	 * <code>childProperty</code> that is a child of the <code>rootProperty</code>.
+	 * 
+	 * @param rootProperty
+	 *            JSON property where the <code>childProperty</code> can be found
+	 * @param childProperty
+	 *            JSON array property where the <code>jsonObject</code> will be
+	 *            added
+	 * @param jsonObject
+	 *            JSON object to add
+	 * @return <code>boolean</code> to indicate success or failure of the operation
+	 */
+	private static boolean addObjectToFile(String rootProperty, String childProperty, JsonObject jsonObject) {
+		JsonObject originalSlurm = null;
+		try (FileReader fr = new FileReader(slurmLocationFile); JsonParser parser = Json.createParser(fr)) {
+			parser.next();
+			originalSlurm = parser.getObject();
+		} catch (IOException e) {
+			logger.log(Level.WARNING, "Failed to load SLURM " + slurmLocationFile + ":" + e.getMessage(), e);
+			e.printStackTrace();
+			return false;
+		} catch (IllegalStateException e) {
+			logger.log(Level.WARNING, "Invalid JSON object at SLURM " + slurmLocationFile + ": " + e.getMessage(), e);
+			return false;
+		}
+		JsonObjectBuilder mainBuilder = Json.createObjectBuilder(originalSlurm);
+		JsonObjectBuilder rootBuilder = Json.createObjectBuilder(originalSlurm.getJsonObject(rootProperty));
+		JsonArrayBuilder childBuilder = Json
+				.createArrayBuilder(originalSlurm.getJsonObject(rootProperty).getJsonArray(childProperty));
+
+		childBuilder.add(jsonObject);
+		rootBuilder.add(childProperty, childBuilder);
+		mainBuilder.add(rootProperty, rootBuilder);
+		JsonObject newSlurm = mainBuilder.build();
+		try {
+			Files.write(slurmLocationFile.toPath().normalize(),
+					jsonFormat(newSlurm, JsonGenerator.PRETTY_PRINTING).getBytes());
+		} catch (IOException e) {
+			logger.log(Level.WARNING, "Failed to write into SLURM " + slurmLocationFile + ":" + e.getMessage(), e);
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Get the <code>json</code> as a String using the sent <code>options</code>
+	 * 
+	 * @param json
+	 * @param options
+	 * @return
+	 */
+	public static String jsonFormat(JsonStructure json, String... options) {
+		StringWriter stringWriter = new StringWriter();
+		Map<String, Boolean> config = new HashMap<>();
+		if (options != null) {
+			for (String option : options) {
+				config.put(option, true);
+			}
+		}
+		JsonWriterFactory writerFactory = Json.createWriterFactory(config);
+		JsonWriter jsonWriter = writerFactory.createWriter(stringWriter);
+		jsonWriter.write(json);
+		jsonWriter.close();
+		return stringWriter.toString();
 	}
 
 	/**

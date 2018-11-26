@@ -5,6 +5,7 @@ import javax.json.JsonObjectBuilder;
 import javax.json.JsonStructure;
 
 import mx.nic.lab.rpki.api.result.ApiSingleResult;
+import mx.nic.lab.rpki.api.slurm.SlurmUtil;
 import mx.nic.lab.rpki.db.pojo.SlurmBgpsec;
 
 /**
@@ -26,11 +27,8 @@ public class SlurmBgpsecSingleResult extends ApiSingleResult<SlurmBgpsec> {
 		}
 		JsonObjectBuilder builder = Json.createObjectBuilder();
 		addKeyValueToBuilder(builder, "id", slurmBgpsec.getId(), true);
-		addKeyValueToBuilder(builder, "asn", slurmBgpsec.getAsn(), false);
-		addKeyValueToBuilder(builder, "SKI", slurmBgpsec.getSki(), false);
-		addKeyValueToBuilder(builder, "routerPublicKey", slurmBgpsec.getRouterPublicKey(), false);
 		addKeyValueToBuilder(builder, "type", slurmBgpsec.getType(), true);
-		addKeyValueToBuilder(builder, "comment", slurmBgpsec.getComment(), true);
+		builder.addAll(SlurmUtil.getBgpsecBuilder(slurmBgpsec));
 
 		return builder.build();
 	}

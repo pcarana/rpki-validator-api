@@ -7,9 +7,11 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
 
+import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonNumber;
 import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 
 import org.bouncycastle.util.encoders.DecoderException;
 import org.bouncycastle.util.encoders.Hex;
@@ -262,6 +264,60 @@ public class SlurmUtil {
 			}
 		}
 		return slurmBgpsec;
+	}
+
+	/**
+	 * Return the <code>slurmPrefix</code> as a {@link JsonObjectBuilder} that
+	 * already has the basic properties of the object (asn, prefix, maxPrefixLength,
+	 * comment)
+	 * 
+	 * @param slurmPrefix
+	 *            {@link SlurmPrefix} from where the JSON will be set
+	 * @return {@link JsonObjectBuilder} with the properties: asn, prefix,
+	 *         maxPrefixLength, and comment
+	 */
+	public static JsonObjectBuilder getPrefixBuilder(SlurmPrefix slurmPrefix) {
+		JsonObjectBuilder builder = Json.createObjectBuilder();
+		if (slurmPrefix.getAsn() != null) {
+			builder.add("asn", slurmPrefix.getAsn());
+		}
+		if (slurmPrefix.getPrefixText() != null && !slurmPrefix.getPrefixText().isEmpty()) {
+			builder.add("prefix", slurmPrefix.getPrefixText() + "/" + slurmPrefix.getPrefixLength());
+		}
+		if (slurmPrefix.getPrefixMaxLength() != null) {
+			builder.add("maxPrefixLength", slurmPrefix.getPrefixMaxLength());
+		}
+		if (slurmPrefix.getComment() != null) {
+			builder.add("comment", slurmPrefix.getComment());
+		}
+		return builder;
+	}
+
+	/**
+	 * Return the <code>slurmBgpsec</code> as a {@link JsonObjectBuilder} that
+	 * already has the basic properties of the object (asn, SKI, routerPublicKey,
+	 * comment)
+	 * 
+	 * @param slurmPrefix
+	 *            {@link SlurmBgpsec} from where the JSON will be set
+	 * @return {@link JsonObjectBuilder} with the properties: asn, SKI,
+	 *         routerPublicKey, and comment
+	 */
+	public static JsonObjectBuilder getBgpsecBuilder(SlurmBgpsec slurmBgpsec) {
+		JsonObjectBuilder builder = Json.createObjectBuilder();
+		if (slurmBgpsec.getAsn() != null) {
+			builder.add("asn", slurmBgpsec.getAsn());
+		}
+		if (slurmBgpsec.getSki() != null) {
+			builder.add("SKI", slurmBgpsec.getSki());
+		}
+		if (slurmBgpsec.getRouterPublicKey() != null) {
+			builder.add("routerPublicKey", slurmBgpsec.getRouterPublicKey());
+		}
+		if (slurmBgpsec.getComment() != null) {
+			builder.add("comment", slurmBgpsec.getComment());
+		}
+		return builder;
 	}
 
 	/**
