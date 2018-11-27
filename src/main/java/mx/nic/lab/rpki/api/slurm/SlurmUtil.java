@@ -19,6 +19,7 @@ import org.bouncycastle.util.encoders.Hex;
 import mx.nic.lab.rpki.api.util.CMSUtil;
 import mx.nic.lab.rpki.api.util.Util;
 import mx.nic.lab.rpki.db.pojo.ApiObject;
+import mx.nic.lab.rpki.db.pojo.Slurm;
 import mx.nic.lab.rpki.db.pojo.SlurmBgpsec;
 import mx.nic.lab.rpki.db.pojo.SlurmPrefix;
 
@@ -332,17 +333,19 @@ public class SlurmUtil {
 	 */
 	public static boolean isValidSlurm(JsonObject jsonObject, List<Exception> exceptions) {
 		if (jsonObject.keySet().size() != 3) {
-			exceptions.add(new IllegalArgumentException("The JSON object must contain exactly 3 properties: "
-					+ "slurmVersion, validationOutputFilters, and locallyAddedAssertions"));
+			exceptions.add(new IllegalArgumentException(
+					"The JSON object must contain exactly 3 properties: " + Slurm.SLURM_VERSION + ", "
+							+ Slurm.VALIDATION_OUTPUT_FILTERS + ", and " + Slurm.LOCALLY_ADDED_ASSERTIONS));
 			return false;
 		}
 		for (String key : jsonObject.keySet()) {
-			if (!key.matches("(slurmVersion|validationOutputFilters|locallyAddedAssertions)")) {
+			if (!key.matches("(" + Slurm.SLURM_VERSION + "|" + Slurm.VALIDATION_OUTPUT_FILTERS + "|"
+					+ Slurm.LOCALLY_ADDED_ASSERTIONS + ")")) {
 				exceptions.add(new IllegalArgumentException("Invalid key '" + key + "' at JSON object"));
 				return false;
 			}
 			switch (key) {
-			case "slurmVersion":
+			case Slurm.SLURM_VERSION:
 				try {
 					if (jsonObject.getInt(key) != 1) {
 						exceptions.add(new IllegalArgumentException("'" + key + "' must have the value '1'"));
@@ -353,7 +356,7 @@ public class SlurmUtil {
 					return false;
 				}
 				break;
-			case "validationOutputFilters":
+			case Slurm.VALIDATION_OUTPUT_FILTERS:
 				JsonObject filters = null;
 				try {
 					filters = jsonObject.getJsonObject(key);
@@ -365,7 +368,7 @@ public class SlurmUtil {
 					return false;
 				}
 				break;
-			case "locallyAddedAssertions":
+			case Slurm.LOCALLY_ADDED_ASSERTIONS:
 				JsonObject assertions = null;
 				try {
 					assertions = jsonObject.getJsonObject(key);
@@ -397,17 +400,17 @@ public class SlurmUtil {
 		if (jsonObject.keySet().size() != 2) {
 			exceptions.add(new IllegalArgumentException(
 					"The JSON object 'validationOutputFilters' must contain exactly 2 properties: "
-							+ "prefixFilters, and bgpsecFilters"));
+							+ Slurm.PREFIX_FILTERS + ", and " + Slurm.BGPSEC_FILTERS));
 			return false;
 		}
 		for (String key : jsonObject.keySet()) {
-			if (!key.matches("(prefixFilters|bgpsecFilters)")) {
+			if (!key.matches("(" + Slurm.PREFIX_FILTERS + "|" + Slurm.BGPSEC_FILTERS + ")")) {
 				exceptions.add(new IllegalArgumentException(
 						"Invalid key '" + key + "' at JSON object 'validationOutputFilters'"));
 				return false;
 			}
 			switch (key) {
-			case "prefixFilters":
+			case Slurm.PREFIX_FILTERS:
 				JsonArray prefixes = null;
 				try {
 					prefixes = jsonObject.getJsonArray(key);
@@ -419,7 +422,7 @@ public class SlurmUtil {
 					return false;
 				}
 				break;
-			case "bgpsecFilters":
+			case Slurm.BGPSEC_FILTERS:
 				JsonArray bgpsecs = null;
 				try {
 					bgpsecs = jsonObject.getJsonArray(key);
@@ -451,17 +454,17 @@ public class SlurmUtil {
 		if (jsonObject.keySet().size() != 2) {
 			exceptions.add(new IllegalArgumentException(
 					"The JSON object 'locallyAddedAssertions' must contain exactly 2 properties: "
-							+ "prefixAssertions, and bgpsecAssertions"));
+							+ Slurm.PREFIX_ASSERTIONS + ", and " + Slurm.BGPSEC_ASSERTIONS));
 			return false;
 		}
 		for (String key : jsonObject.keySet()) {
-			if (!key.matches("(prefixAssertions|bgpsecAssertions)")) {
+			if (!key.matches("(" + Slurm.PREFIX_ASSERTIONS + "|" + Slurm.BGPSEC_ASSERTIONS + ")")) {
 				exceptions.add(new IllegalArgumentException(
 						"Invalid key '" + key + "' at JSON object 'locallyAddedAssertions'"));
 				return false;
 			}
 			switch (key) {
-			case "prefixAssertions":
+			case Slurm.PREFIX_ASSERTIONS:
 				JsonArray prefixes = null;
 				try {
 					prefixes = jsonObject.getJsonArray(key);
@@ -473,7 +476,7 @@ public class SlurmUtil {
 					return false;
 				}
 				break;
-			case "bgpsecAssertions":
+			case Slurm.BGPSEC_ASSERTIONS:
 				JsonArray bgpsecs = null;
 				try {
 					bgpsecs = jsonObject.getJsonArray(key);

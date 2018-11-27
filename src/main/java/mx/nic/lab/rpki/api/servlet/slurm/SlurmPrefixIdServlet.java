@@ -249,7 +249,12 @@ public class SlurmPrefixIdServlet extends SlurmPrefixServlet {
 		} catch (NumberFormatException e) {
 			throw new BadRequestException("#{error.invalidId}", e);
 		}
-		if (!dao.deleteById(id)) {
+		SlurmPrefix removePrefix = dao.getById(id);
+		if (removePrefix == null) {
+			throw new ConflictException();
+		}
+		// Try to update the SLURM file
+		if (!SlurmManager.removePrefixFromFile(removePrefix)) {
 			throw new ConflictException();
 		}
 		return new EmptyResult();

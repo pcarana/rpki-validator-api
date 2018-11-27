@@ -32,6 +32,7 @@ import mx.nic.lab.rpki.api.config.ApiConfiguration;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.exception.InitializationException;
 import mx.nic.lab.rpki.db.pojo.ListResult;
+import mx.nic.lab.rpki.db.pojo.Slurm;
 import mx.nic.lab.rpki.db.pojo.SlurmBgpsec;
 import mx.nic.lab.rpki.db.pojo.SlurmPrefix;
 import mx.nic.lab.rpki.db.service.DataAccessService;
@@ -58,6 +59,14 @@ public class SlurmManager {
 	private static final Logger logger = Logger.getLogger(SlurmManager.class.getName());
 
 	/**
+	 * Actions that can be performed at the SLURM file
+	 *
+	 */
+	private enum Action {
+		ADD_OBJECT, REMOVE_OBJECT
+	}
+
+	/**
 	 * Validate the configured SLURM, sync with DA implementation, and place a
 	 * watcher
 	 * 
@@ -82,6 +91,28 @@ public class SlurmManager {
 		}
 		// The file changes will be watched by another process (not the main
 		// process/thread)
+	}
+
+	/**
+	 * Get the <code>json</code> as a String using the sent <code>options</code>
+	 * 
+	 * @param json
+	 * @param options
+	 * @return
+	 */
+	public static String jsonFormat(JsonStructure json, String... options) {
+		StringWriter stringWriter = new StringWriter();
+		Map<String, Boolean> config = new HashMap<>();
+		if (options != null) {
+			for (String option : options) {
+				config.put(option, true);
+			}
+		}
+		JsonWriterFactory writerFactory = Json.createWriterFactory(config);
+		JsonWriter jsonWriter = writerFactory.createWriter(stringWriter);
+		jsonWriter.write(json);
+		jsonWriter.close();
+		return stringWriter.toString();
 	}
 
 	/**
@@ -129,6 +160,160 @@ public class SlurmManager {
 			exceptions
 					.add(new Exception("Invalid JSON object at SLURM " + slurmLocationFile + ": " + e.getMessage(), e));
 		}
+	}
+
+	/**
+	 * Removes the received <code>slurmPrefix</code> from the SLURM file, this
+	 * action should detonate the sync between the file and the DA implementation
+	 * 
+	 * @param slurmPrefix
+	 * @return <code>boolean</code> to indicate success or failure
+	 */
+	public static boolean removePrefixFromFile(SlurmPrefix slurmPrefix) {
+		String rootProp = getPrefixRootProperty(slurmPrefix.getType());
+		String childProp = getPrefixChildProperty(slurmPrefix.getType());
+		if (rootProp == null || childProp == null) {
+			return false;
+		}
+		return removeObjectFromFile(rootProp, childProp, slurmPrefix.getOrder());
+	}
+
+	/**
+	 * Add a prefix to the configured SLURM file, according to its type (filter or
+	 * assertion)
+	 * 
+	 * @param slurmPrefix
+	 *            {@link SlurmPrefix} to be added
+	 * @return <code>boolean</code> to indicate success or failure of the operation
+	 */
+	public static boolean addPrefixToFile(SlurmPrefix slurmPrefix) {
+		String rootProp = getPrefixRootProperty(slurmPrefix.getType());
+		String childProp = getPrefixChildProperty(slurmPrefix.getType());
+		if (rootProp == null || childProp == null) {
+			return false;
+		}
+		JsonObject newObject = SlurmUtil.getPrefixBuilder(slurmPrefix).build();
+		return addObjectToFile(rootProp, childProp, newObject);
+	}
+
+	/**
+	 * Removes the received <code>slurmBgpsec</code> from the SLURM file, this
+	 * action should detonate the sync between the file and the DA implementation
+	 * 
+	 * @param slurmBgpsec
+	 * @return <code>boolean</code> to indicate success or failure
+	 */
+	public static boolean removeBgpsecFromFile(SlurmBgpsec slurmBgpsec) {
+		String rootProp = getBgpsecRootProperty(slurmBgpsec.getType());
+		String childProp = getBgpsecChildProperty(slurmBgpsec.getType());
+		if (rootProp == null || childProp == null) {
+			return false;
+		}
+		return removeObjectFromFile(rootProp, childProp, slurmBgpsec.getOrder());
+	}
+
+	/**
+	 * Add a BGPsec rule to the configured SLURM file, according to its type (filter
+	 * or assertion)
+	 * 
+	 * @param slurmBgpsec
+	 *            {@link SlurmBgpsec} to be added
+	 * @return <code>boolean</code> to indicate success or failure of the operation
+	 */
+	public static boolean addBgpsecToFile(SlurmBgpsec slurmBgpsec) {
+		String rootProp = getBgpsecRootProperty(slurmBgpsec.getType());
+		String childProp = getBgpsecChildProperty(slurmBgpsec.getType());
+		if (rootProp == null || childProp == null) {
+			return false;
+		}
+		JsonObject newObject = SlurmUtil.getBgpsecBuilder(slurmBgpsec).build();
+		return addObjectToFile(rootProp, childProp, newObject);
+	}
+
+	/**
+	 * Return the JSON property according to the prefix type (either
+	 * {@link Slurm#VALIDATION_OUTPUT_FILTERS} or
+	 * {@link Slurm#LOCALLY_ADDED_ASSERTIONS})
+	 * 
+	 * @param type
+	 * @return
+	 */
+	private static String getPrefixRootProperty(String type) {
+		if (type == null) {
+			logger.log(Level.WARNING, "The SlurmPrefix type can't be null");
+			return null;
+		}
+		if (type.equals(SlurmBgpsec.TYPE_FILTER)) {
+			return Slurm.VALIDATION_OUTPUT_FILTERS;
+		} else if (type.equals(SlurmBgpsec.TYPE_ASSERTION)) {
+			return Slurm.LOCALLY_ADDED_ASSERTIONS;
+		}
+		logger.log(Level.WARNING, "Unknown SlurmPrefix type");
+		return null;
+	}
+
+	/**
+	 * Return the JSON property according to the prefix type (either
+	 * {@link Slurm#PREFIX_FILTERS} or {@link Slurm#PREFIX_ASSERTIONS})
+	 * 
+	 * @param type
+	 * @return
+	 */
+	private static String getPrefixChildProperty(String type) {
+		if (type == null) {
+			logger.log(Level.WARNING, "The SlurmPrefix type can't be null");
+			return null;
+		}
+		if (type.equals(SlurmBgpsec.TYPE_FILTER)) {
+			return Slurm.PREFIX_FILTERS;
+		} else if (type.equals(SlurmBgpsec.TYPE_ASSERTION)) {
+			return Slurm.PREFIX_ASSERTIONS;
+		}
+		logger.log(Level.WARNING, "Unknown SlurmPrefix type");
+		return null;
+	}
+
+	/**
+	 * Return the JSON property according to the BGPsec type (either
+	 * {@link Slurm#VALIDATION_OUTPUT_FILTERS} or
+	 * {@link Slurm#LOCALLY_ADDED_ASSERTIONS})
+	 * 
+	 * @param type
+	 * @return
+	 */
+	private static String getBgpsecRootProperty(String type) {
+		if (type == null) {
+			logger.log(Level.WARNING, "The SlurmBgpsec type can't be null");
+			return null;
+		}
+		if (type.equals(SlurmBgpsec.TYPE_FILTER)) {
+			return Slurm.VALIDATION_OUTPUT_FILTERS;
+		} else if (type.equals(SlurmBgpsec.TYPE_ASSERTION)) {
+			return Slurm.LOCALLY_ADDED_ASSERTIONS;
+		}
+		logger.log(Level.WARNING, "Unknown SlurmBgpsec type");
+		return null;
+	}
+
+	/**
+	 * Return the JSON property according to the BGPsec type (either
+	 * {@link Slurm#BGPSEC_FILTERS} or {@link Slurm#BGPSEC_ASSERTIONS})
+	 * 
+	 * @param type
+	 * @return
+	 */
+	private static String getBgpsecChildProperty(String type) {
+		if (type == null) {
+			logger.log(Level.WARNING, "The SlurmBgpsec type can't be null");
+			return null;
+		}
+		if (type.equals(SlurmBgpsec.TYPE_FILTER)) {
+			return Slurm.BGPSEC_FILTERS;
+		} else if (type.equals(SlurmBgpsec.TYPE_ASSERTION)) {
+			return Slurm.BGPSEC_ASSERTIONS;
+		}
+		logger.log(Level.WARNING, "Unknown SlurmBgpsec type");
+		return null;
 	}
 
 	/**
@@ -203,45 +388,57 @@ public class SlurmManager {
 	private static boolean updatePrefixesByType(JsonObject newSlurm, String type, SlurmPrefixDAO slurmPrefixDao,
 			Set<Long> removePrefixes) {
 		boolean result = true;
-		String rootProperty = type.equals(SlurmPrefix.TYPE_FILTER) ? "validationOutputFilters"
-				: "locallyAddedAssertions";
-		String childProperty = type.equals(SlurmPrefix.TYPE_FILTER) ? "prefixFilters" : "prefixAssertions";
+		String rootProperty = getPrefixRootProperty(type);
+		String childProperty = getPrefixChildProperty(type);
+		if (rootProperty == null || childProperty == null) {
+			return false;
+		}
 		JsonObject jsonRoot = newSlurm.getJsonObject(rootProperty);
 		JsonArray jsonChild = jsonRoot.getJsonArray(childProperty);
+		List<JsonObject> prefixes = null;
 		try {
-			for (JsonObject jsonPrefix : jsonChild.getValuesAs(JsonObject.class)) {
-				SlurmPrefix slurmPrefixFile = SlurmUtil.getAndvalidatePrefix(jsonPrefix, type);
-				SlurmPrefix slurmPrefixDb = null;
-				try {
-					slurmPrefixDb = slurmPrefixDao.getPrefixByProperties(slurmPrefixFile.getAsn(),
-							slurmPrefixFile.getStartPrefix(), slurmPrefixFile.getPrefixLength(),
-							slurmPrefixFile.getPrefixMaxLength(), type);
-					// The object doesn't exists, attempt to create
-					if (slurmPrefixDb == null) {
-						if (!slurmPrefixDao.create(slurmPrefixFile)) {
-							logger.log(Level.SEVERE, "The object couldn't be created: " + slurmPrefixFile.toString());
-							result = false;
-						}
-						continue;
-					}
-					// Compare the comment
-					if (!slurmPrefixDb.getComment().equals(slurmPrefixFile.getComment())) {
-						if (slurmPrefixDao.updateComment(slurmPrefixDb.getId(), slurmPrefixFile.getComment()) != 1) {
-							logger.log(Level.SEVERE,
-									"The object comment couldn't be updated: " + slurmPrefixDb.toString());
-							result = false;
-						}
-					}
-					removePrefixes.remove(slurmPrefixDb.getId());
-				} catch (ApiDataAccessException e) {
-					logger.log(Level.SEVERE, "Error performing an action at the Data Access Implementation", e);
-					result = false;
-				}
-			}
+			prefixes = jsonChild.getValuesAs(JsonObject.class);
 		} catch (ClassCastException e) {
 			logger.log(Level.SEVERE, "Error geting a prefix " + type + " as JSON object from the SLURM at "
 					+ rootProperty.concat(childProperty), e);
-			result = false;
+			return false;
+		}
+		for (int index = 0; index < jsonChild.size(); index++) {
+			JsonObject jsonPrefix = prefixes.get(index);
+			SlurmPrefix slurmPrefixFile = SlurmUtil.getAndvalidatePrefix(jsonPrefix, type);
+			SlurmPrefix slurmPrefixDb = null;
+			try {
+				slurmPrefixDb = slurmPrefixDao.getPrefixByProperties(slurmPrefixFile.getAsn(),
+						slurmPrefixFile.getStartPrefix(), slurmPrefixFile.getPrefixLength(),
+						slurmPrefixFile.getPrefixMaxLength(), type);
+				// The object doesn't exists, attempt to create
+				if (slurmPrefixDb == null) {
+					slurmPrefixFile.setOrder(index);
+					if (!slurmPrefixDao.create(slurmPrefixFile)) {
+						logger.log(Level.SEVERE, "The object couldn't be created: " + slurmPrefixFile.toString());
+						result = false;
+					}
+					continue;
+				}
+				// Compare the comment
+				if (!slurmPrefixDb.getComment().equals(slurmPrefixFile.getComment())) {
+					if (slurmPrefixDao.updateComment(slurmPrefixDb.getId(), slurmPrefixFile.getComment()) != 1) {
+						logger.log(Level.SEVERE, "The object comment couldn't be updated: " + slurmPrefixDb.toString());
+						result = false;
+					}
+				}
+				// Compare the order
+				if (slurmPrefixDb.getOrder() == null || slurmPrefixDb.getOrder() != index) {
+					if (slurmPrefixDao.updateOrder(slurmPrefixDb.getId(), index) != 1) {
+						logger.log(Level.SEVERE, "The object order couldn't be updated: " + slurmPrefixDb.toString());
+						result = false;
+					}
+				}
+				removePrefixes.remove(slurmPrefixDb.getId());
+			} catch (ApiDataAccessException e) {
+				logger.log(Level.SEVERE, "Error performing an action at the Data Access Implementation", e);
+				result = false;
+			}
 		}
 		return result;
 	}
@@ -296,106 +493,75 @@ public class SlurmManager {
 	private static boolean updateBgpsecsByType(JsonObject newSlurm, String type, SlurmBgpsecDAO slurmBgpsecDao,
 			Set<Long> removeBgpsecs) {
 		boolean result = true;
-		String rootProperty = type.equals(SlurmBgpsec.TYPE_FILTER) ? "validationOutputFilters"
-				: "locallyAddedAssertions";
-		String childProperty = type.equals(SlurmBgpsec.TYPE_FILTER) ? "bgpsecFilters" : "bgpsecAssertions";
+		String rootProperty = getBgpsecRootProperty(type);
+		String childProperty = getBgpsecChildProperty(type);
+		if (rootProperty == null || childProperty == null) {
+			return false;
+		}
 		JsonObject jsonRoot = newSlurm.getJsonObject(rootProperty);
 		JsonArray jsonChild = jsonRoot.getJsonArray(childProperty);
+		List<JsonObject> bgpsecs = null;
 		try {
-			for (JsonObject jsonBgpsec : jsonChild.getValuesAs(JsonObject.class)) {
-				SlurmBgpsec slurmBgpsecFile = SlurmUtil.getAndvalidateBgpsec(jsonBgpsec, type);
-				SlurmBgpsec slurmBgpsecDb = null;
-				try {
-					slurmBgpsecDb = slurmBgpsecDao.getBgpsecByProperties(slurmBgpsecFile.getAsn(),
-							slurmBgpsecFile.getSki(), slurmBgpsecFile.getRouterPublicKey(), type);
-					// The object doesn't exists, attempt to create
-					if (slurmBgpsecDb == null) {
-						if (!slurmBgpsecDao.create(slurmBgpsecFile)) {
-							logger.log(Level.SEVERE, "The object couldn't be created: " + slurmBgpsecFile.toString());
-							result = false;
-						}
-						continue;
-					}
-					// Compare the comment
-					if (!slurmBgpsecDb.getComment().equals(slurmBgpsecFile.getComment())) {
-						if (slurmBgpsecDao.updateComment(slurmBgpsecDb.getId(), slurmBgpsecFile.getComment()) != 1) {
-							logger.log(Level.SEVERE,
-									"The object comment couldn't be updated: " + slurmBgpsecDb.toString());
-							result = false;
-						}
-					}
-					removeBgpsecs.remove(slurmBgpsecDb.getId());
-				} catch (ApiDataAccessException e) {
-					logger.log(Level.SEVERE, "Error performing an action at the Data Access Implementation", e);
-					result = false;
-				}
-			}
+			bgpsecs = jsonChild.getValuesAs(JsonObject.class);
 		} catch (ClassCastException e) {
 			logger.log(Level.SEVERE, "Error geting a BGPsec " + type + " as JSON object from the SLURM at "
 					+ rootProperty.concat(childProperty), e);
-			result = false;
+			return false;
+		}
+		for (int index = 0; index < jsonChild.size(); index++) {
+			JsonObject jsonBgpsec = bgpsecs.get(index);
+			SlurmBgpsec slurmBgpsecFile = SlurmUtil.getAndvalidateBgpsec(jsonBgpsec, type);
+			SlurmBgpsec slurmBgpsecDb = null;
+			try {
+				slurmBgpsecDb = slurmBgpsecDao.getBgpsecByProperties(slurmBgpsecFile.getAsn(), slurmBgpsecFile.getSki(),
+						slurmBgpsecFile.getRouterPublicKey(), type);
+				// The object doesn't exists, attempt to create
+				if (slurmBgpsecDb == null) {
+					if (!slurmBgpsecDao.create(slurmBgpsecFile)) {
+						logger.log(Level.SEVERE, "The object couldn't be created: " + slurmBgpsecFile.toString());
+						result = false;
+					}
+					continue;
+				}
+				// Compare the comment
+				if (!slurmBgpsecDb.getComment().equals(slurmBgpsecFile.getComment())) {
+					if (slurmBgpsecDao.updateComment(slurmBgpsecDb.getId(), slurmBgpsecFile.getComment()) != 1) {
+						logger.log(Level.SEVERE, "The object comment couldn't be updated: " + slurmBgpsecDb.toString());
+						result = false;
+					}
+				}
+				// Compare the order
+				if (slurmBgpsecDb.getOrder() == null || slurmBgpsecDb.getOrder() != index) {
+					if (slurmBgpsecDao.updateOrder(slurmBgpsecDb.getId(), index) != 1) {
+						logger.log(Level.SEVERE, "The object order couldn't be updated: " + slurmBgpsecDb.toString());
+						result = false;
+					}
+				}
+				removeBgpsecs.remove(slurmBgpsecDb.getId());
+			} catch (ApiDataAccessException e) {
+				logger.log(Level.SEVERE, "Error performing an action at the Data Access Implementation", e);
+				result = false;
+			}
 		}
 		return result;
 	}
 
 	/**
-	 * Add a prefix to the configured SLURM file, according to its type (filter or
-	 * assertion)
+	 * Remove the object located at the <code>deleteIndex</code>(either a SLURM
+	 * prefix or BGPsec) inside the JSON array <code>childProperty</code>, which is
+	 * a property of <code>rootProperty</code>
 	 * 
-	 * @param slurmPrefix
-	 *            {@link SlurmPrefix} to be added
-	 * @return <code>boolean</code> to indicate success or failure of the operation
+	 * @param rootProperty
+	 *            JSON property where the <code>childProperty</code> can be found
+	 * @param childProperty
+	 *            JSON array property where the <code>deleteIndex</code> will be
+	 *            deleted
+	 * @param deleteIndex
+	 *            Position of the object to delete at the JSON array
+	 * @return
 	 */
-	public static boolean addPrefixToFile(SlurmPrefix slurmPrefix) {
-		String type = slurmPrefix.getType();
-		if (type == null) {
-			logger.log(Level.WARNING, "The SlurmPrefix type can't be null");
-			return false;
-		}
-		String rootProp;
-		String childProp;
-		if (type.equals(SlurmPrefix.TYPE_FILTER)) {
-			rootProp = "validationOutputFilters";
-			childProp = "prefixFilters";
-		} else if (type.equals(SlurmPrefix.TYPE_ASSERTION)) {
-			rootProp = "locallyAddedAssertions";
-			childProp = "prefixAssertions";
-		} else {
-			logger.log(Level.WARNING, "Unknown SlurmPrefix type");
-			return false;
-		}
-		JsonObject newObject = SlurmUtil.getPrefixBuilder(slurmPrefix).build();
-		return addObjectToFile(rootProp, childProp, newObject);
-	}
-
-	/**
-	 * Add a BGPsec rule to the configured SLURM file, according to its type (filter
-	 * or assertion)
-	 * 
-	 * @param slurmBgpsec
-	 *            {@link SlurmBgpsec} to be added
-	 * @return <code>boolean</code> to indicate success or failure of the operation
-	 */
-	public static boolean addBgpsecToFile(SlurmBgpsec slurmBgpsec) {
-		String type = slurmBgpsec.getType();
-		if (type == null) {
-			logger.log(Level.WARNING, "The SlurmBgpsec type can't be null");
-			return false;
-		}
-		String rootProp;
-		String childProp;
-		if (type.equals(SlurmBgpsec.TYPE_FILTER)) {
-			rootProp = "validationOutputFilters";
-			childProp = "bgpsecFilters";
-		} else if (type.equals(SlurmBgpsec.TYPE_ASSERTION)) {
-			rootProp = "locallyAddedAssertions";
-			childProp = "bgpsecAssertions";
-		} else {
-			logger.log(Level.WARNING, "Unknown SlurmBgpsec type");
-			return false;
-		}
-		JsonObject newObject = SlurmUtil.getBgpsecBuilder(slurmBgpsec).build();
-		return addObjectToFile(rootProp, childProp, newObject);
+	private static boolean removeObjectFromFile(String rootProperty, String childProperty, int deleteIndex) {
+		return updateFile(rootProperty, childProperty, Action.REMOVE_OBJECT, null, deleteIndex);
 	}
 
 	/**
@@ -413,6 +579,26 @@ public class SlurmManager {
 	 * @return <code>boolean</code> to indicate success or failure of the operation
 	 */
 	private static boolean addObjectToFile(String rootProperty, String childProperty, JsonObject jsonObject) {
+		return updateFile(rootProperty, childProperty, Action.ADD_OBJECT, jsonObject, -1);
+	}
+
+	/**
+	 * Updates the SLURM file according to the <code>action</code> specified, the
+	 * action is performed at the array <code>rootProperty.childProperty</code>.<br>
+	 * <br>
+	 * The <code>jsonObject</code> will be added if the action is
+	 * {@link Action#ADD_OBJECT}; if the action is {@link Action#REMOVE_OBJECT},
+	 * then the object located at <code>deleteIndex</code> will be deleted.
+	 * 
+	 * @param rootProperty
+	 * @param childProperty
+	 * @param action
+	 * @param jsonObject
+	 * @param deleteIndex
+	 * @return <code>boolean</code> to indicate success or failure of the operation
+	 */
+	private static boolean updateFile(String rootProperty, String childProperty, Action action, JsonObject jsonObject,
+			int deleteIndex) {
 		JsonObject originalSlurm = null;
 		try (FileReader fr = new FileReader(slurmLocationFile); JsonParser parser = Json.createParser(fr)) {
 			parser.next();
@@ -430,7 +616,11 @@ public class SlurmManager {
 		JsonArrayBuilder childBuilder = Json
 				.createArrayBuilder(originalSlurm.getJsonObject(rootProperty).getJsonArray(childProperty));
 
-		childBuilder.add(jsonObject);
+		if (action == Action.ADD_OBJECT) {
+			childBuilder.add(jsonObject);
+		} else if (action == Action.REMOVE_OBJECT) {
+			childBuilder.remove(deleteIndex);
+		}
 		rootBuilder.add(childProperty, childBuilder);
 		mainBuilder.add(rootProperty, rootBuilder);
 		JsonObject newSlurm = mainBuilder.build();
@@ -442,28 +632,6 @@ public class SlurmManager {
 			return false;
 		}
 		return true;
-	}
-
-	/**
-	 * Get the <code>json</code> as a String using the sent <code>options</code>
-	 * 
-	 * @param json
-	 * @param options
-	 * @return
-	 */
-	public static String jsonFormat(JsonStructure json, String... options) {
-		StringWriter stringWriter = new StringWriter();
-		Map<String, Boolean> config = new HashMap<>();
-		if (options != null) {
-			for (String option : options) {
-				config.put(option, true);
-			}
-		}
-		JsonWriterFactory writerFactory = Json.createWriterFactory(config);
-		JsonWriter jsonWriter = writerFactory.createWriter(stringWriter);
-		jsonWriter.write(json);
-		jsonWriter.close();
-		return stringWriter.toString();
 	}
 
 	/**

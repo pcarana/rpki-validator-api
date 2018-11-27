@@ -231,7 +231,12 @@ public class SlurmBgpsecIdServlet extends SlurmBgpsecServlet {
 		} catch (NumberFormatException e) {
 			throw new BadRequestException("#{error.invalidId}", e);
 		}
-		if (!dao.deleteById(id)) {
+		SlurmBgpsec removeBgpsec = dao.getById(id);
+		if (removeBgpsec == null) {
+			throw new ConflictException();
+		}
+		// Try to update the SLURM file
+		if (!SlurmManager.removeBgpsecFromFile(removeBgpsec)) {
 			throw new ConflictException();
 		}
 		return new EmptyResult();

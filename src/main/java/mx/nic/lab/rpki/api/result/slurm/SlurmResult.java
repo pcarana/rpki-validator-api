@@ -50,15 +50,15 @@ public class SlurmResult extends ApiSingleResult<Slurm> {
 			bgpsecAssertions.add(getFormattedBgpsec(bgpsec));
 		});
 
-		validationOutputFilters.add("prefixFilters", prefixFilters);
-		validationOutputFilters.add("bgpsecFilters", bgpsecFilters);
+		validationOutputFilters.add(Slurm.PREFIX_FILTERS, prefixFilters);
+		validationOutputFilters.add(Slurm.BGPSEC_FILTERS, bgpsecFilters);
 
-		locallyAddedAssertions.add("prefixAssertions", prefixAssertions);
-		locallyAddedAssertions.add("bgpsecAssertions", bgpsecAssertions);
+		locallyAddedAssertions.add(Slurm.PREFIX_ASSERTIONS, prefixAssertions);
+		locallyAddedAssertions.add(Slurm.BGPSEC_ASSERTIONS, bgpsecAssertions);
 
-		slurmBuilder.add("slurmVersion", slurm.getSlurmVersion());
-		slurmBuilder.add("validationOutputFilters", validationOutputFilters);
-		slurmBuilder.add("locallyAddedAssertions", locallyAddedAssertions);
+		slurmBuilder.add(Slurm.SLURM_VERSION, slurm.getSlurmVersion());
+		slurmBuilder.add(Slurm.VALIDATION_OUTPUT_FILTERS, validationOutputFilters);
+		slurmBuilder.add(Slurm.LOCALLY_ADDED_ASSERTIONS, locallyAddedAssertions);
 
 		return slurmBuilder.build();
 	}
