@@ -6,6 +6,7 @@ import javax.json.JsonStructure;
 
 import mx.nic.lab.rpki.api.result.ApiSingleResult;
 import mx.nic.lab.rpki.api.result.roa.RoaSingleResult;
+import mx.nic.lab.rpki.api.result.slurm.SlurmPrefixSingleResult;
 import mx.nic.lab.rpki.db.pojo.RouteValidation;
 
 /**
@@ -34,6 +35,10 @@ public class RouteValidationResult extends ApiSingleResult<RouteValidation> {
 			// Use the existent ROA result
 			RoaSingleResult roaResult = new RoaSingleResult(routeValidation.getRoaMatch());
 			addKeyValueToBuilder(builder, "match", roaResult.toJsonStructure(), true);
+		}
+		if (routeValidation.getSlurmMatch() != null) {
+			SlurmPrefixSingleResult slurmResult = new SlurmPrefixSingleResult(routeValidation.getSlurmMatch());
+			addKeyValueToBuilder(builder, "slurmMatch", slurmResult.toJsonStructure(), true);
 		}
 		return builder.build();
 	}
