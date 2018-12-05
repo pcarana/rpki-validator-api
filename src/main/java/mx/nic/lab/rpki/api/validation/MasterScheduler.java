@@ -87,7 +87,12 @@ public class MasterScheduler {
 		}
 	}
 
+	/**
+	 * Stop the scheduler (as well as the jobs)
+	 */
 	public static void shutdown() {
+		// Stop it manually to kill the thread that is handled apart from Quartz
+		QuartzSlurmWatcherJob.stop();
 		try {
 			if (scheduler != null && scheduler.isStarted()) {
 				scheduler.shutdown();

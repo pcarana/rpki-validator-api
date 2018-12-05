@@ -43,6 +43,11 @@ public class QuartzSlurmWatcherJob implements Job {
 	private static WatchService watchService;
 
 	/**
+	 * {@link WatchKey} responsible to get updates at SLURM file(s)
+	 */
+	private static WatchKey watchKey;
+
+	/**
 	 * Class logger
 	 */
 	private static final Logger logger = Logger.getLogger(QuartzSlurmWatcherJob.class.getName());
@@ -54,10 +59,9 @@ public class QuartzSlurmWatcherJob implements Job {
 		}
 		Path slurmPath = SlurmManager.getSlurmLocationFile().toPath().normalize();
 		String slurmFile = slurmPath.getFileName().toString();
-		WatchKey key;
 		try {
-			while ((key = watchService.take()) != null) {
-				for (WatchEvent<?> event : key.pollEvents()) {
+			while ((watchKey = watchService.take()) != null) {
+				for (WatchEvent<?> event : watchKey.pollEvents()) {
 					logger.log(Level.INFO, "File " + event.context() + " update detected, kind: " + event.kind());
 					if (!event.context().toString().equals(slurmFile)) {
 						// Not interested on another file(s)
@@ -78,7 +82,7 @@ public class QuartzSlurmWatcherJob implements Job {
 					logger.log(Level.INFO, "Triggering SLURM validation");
 					MasterScheduler.triggerSlurmValidation();
 				}
-				boolean valid = key.reset();
+				boolean valid = watchKey.reset();
 				if (!valid) {
 					break;
 				}
@@ -104,5 +108,14 @@ public class QuartzSlurmWatcherJob implements Job {
 
 	static JobKey getJobKey() {
 		return new JobKey(String.format("%s", QuartzSlurmWatcherJob.class.getName()));
+	}
+
+	/**
+	 * Stop watching the file(s)
+	 */
+	public static void stop() {
+		if (watchKey != null) {
+			watchKey.cancel();
+		}
 	}
 }
