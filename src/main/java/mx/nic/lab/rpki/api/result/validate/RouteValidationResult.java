@@ -27,18 +27,18 @@ public class RouteValidationResult extends ApiSingleResult<RouteValidation> {
 			return null;
 		}
 		JsonObjectBuilder builder = Json.createObjectBuilder();
-		addKeyValueToBuilder(builder, "validityState", routeValidation.getValidityState().toString().toLowerCase(),
-				true);
-		addKeyValueToBuilder(builder, "prefixState", routeValidation.getPrefixState().toString().toLowerCase(), true);
-		addKeyValueToBuilder(builder, "asState", routeValidation.getAsState().toString().toLowerCase(), true);
+		addKeyValueToBuilder(builder, "validityState", routeValidation.getValidityState(), true);
+		addKeyValueToBuilder(builder, "prefixState", routeValidation.getPrefixState(), true);
+		addKeyValueToBuilder(builder, "asState", routeValidation.getAsState(), true);
+		addKeyValueToBuilder(builder, "fullCheck", routeValidation.getFullCheck(), true);
 		if (routeValidation.getRoaMatch() != null) {
 			// Use the existent ROA result
 			RoaSingleResult roaResult = new RoaSingleResult(routeValidation.getRoaMatch());
-			addKeyValueToBuilder(builder, "match", roaResult.toJsonStructure(), true);
+			addKeyValueToBuilder(builder, "match", roaResult.toJsonStructure(), false);
 		}
 		if (routeValidation.getSlurmMatch() != null) {
 			SlurmPrefixSingleResult slurmResult = new SlurmPrefixSingleResult(routeValidation.getSlurmMatch());
-			addKeyValueToBuilder(builder, "slurmMatch", slurmResult.toJsonStructure(), true);
+			addKeyValueToBuilder(builder, "slurmMatch", slurmResult.toJsonStructure(), false);
 		}
 		return builder.build();
 	}

@@ -36,6 +36,12 @@ public class RouteValidationServlet extends DataAccessServlet<RouteValidationDAO
 	 */
 	private static final long serialVersionUID = 1L;
 
+	/**
+	 * Optional query parameter to indicate if a full check must be done, if
+	 * <code>false</code> then the search will be only for the exact match
+	 */
+	private static final String PARAM_FULL_CHECK = "fullCheck";
+
 	@Override
 	protected ApiResult doApiDaRequest(RequestMethod requestMethod, HttpServletRequest request, RouteValidationDAO dao)
 			throws HttpException, ApiDataAccessException {
@@ -45,6 +51,13 @@ public class RouteValidationServlet extends DataAccessServlet<RouteValidationDAO
 		if (additionalPathInfo.size() != 3) {
 			throw new BadRequestException("#{error.missingArguments}");
 		}
+		// Only the exact match ("true") will be treated as such
+		String fullCheckStr = request.getParameter(PARAM_FULL_CHECK);
+		if (fullCheckStr != null && !fullCheckStr.trim().equals("true") && !fullCheckStr.trim().equals("false")) {
+			throw new BadRequestException(
+					Util.concatenateParamsToLabel("#{error.invalidParameter}", PARAM_FULL_CHECK, "true, false"));
+		}
+		boolean fullCheck = fullCheckStr == null ? false : Boolean.parseBoolean(fullCheckStr.trim());
 		// Basic validations
 		Long asn = null;
 		try {
@@ -75,7 +88,7 @@ public class RouteValidationServlet extends DataAccessServlet<RouteValidationDAO
 			throw new BadRequestException("#{error.route.validation.prefix.invalid}");
 		}
 
-		RouteValidation routeValidation = dao.validate(asn, prefix.getAddress(), prefixLength);
+		RouteValidation routeValidation = dao.validate(asn, prefix.getAddress(), prefixLength, fullCheck);
 		return new RouteValidationResult(routeValidation);
 	}
 
