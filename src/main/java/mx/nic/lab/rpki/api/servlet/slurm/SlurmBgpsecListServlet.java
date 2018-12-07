@@ -38,6 +38,17 @@ public class SlurmBgpsecListServlet extends SlurmBgpsecServlet {
 	}
 
 	/**
+	 * Valid filter keys that can be received as query parameters, they're mapped to
+	 * the corresponding POJO properties
+	 */
+	private static final Map<String, String> validFilterKeysMap;
+	static {
+		validFilterKeysMap = new HashMap<>();
+		validFilterKeysMap.put("asn", SlurmBgpsec.ASN);
+		validFilterKeysMap.put("type", SlurmBgpsec.TYPE);
+	}
+
+	/**
 	 * Serial version ID
 	 */
 	private static final long serialVersionUID = 1L;
@@ -63,6 +74,11 @@ public class SlurmBgpsecListServlet extends SlurmBgpsecServlet {
 	@Override
 	protected Map<String, String> getValidSortKeys(HttpServletRequest request) {
 		return validSortKeysMap;
+	}
+
+	@Override
+	protected Map<String, String> getValidFilterKeys(HttpServletRequest request) {
+		return validFilterKeysMap;
 	}
 
 }

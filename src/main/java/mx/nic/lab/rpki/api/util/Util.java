@@ -163,8 +163,8 @@ public class Util {
 	 *             if the query parameters aren't as expected (empty parameters
 	 *             aren't valid)
 	 */
-	public static PagingParameters createFromRequest(HttpServletRequest request, Map<String, String> validSortKeysMap)
-			throws BadRequestException {
+	public static PagingParameters createFromRequest(HttpServletRequest request, Map<String, String> validSortKeysMap,
+			Map<String, String> validFilterKeysMap) throws BadRequestException {
 		// Query parameter name to indicate limit
 		final String LIMIT = "limit";
 		// Query parameter name to indicate offset
@@ -172,11 +172,18 @@ public class Util {
 		// Query parameter name to indicate the properties used to sort as well as the
 		// order (asc, desc)
 		final String SORT = "sort";
+		// Query parameter name to indicate the field where the filter query will be
+		// applied
+		final String FILTER_FIELD = "filterField";
+		// Query parameter name to indicate the filter query to be applied
+		final String FILTER_QUERY = "filterQuery";
 
 		// If sent multiple times, than only take into account the first parameter
 		String rcvdLimit = request.getParameter(LIMIT);
 		String rcvdOffset = request.getParameter(OFFSET);
 		String rcvdSort = request.getParameter(SORT);
+		String rcvdFilterField = request.getParameter(FILTER_FIELD);
+		String rcvdFilterQuery = request.getParameter(FILTER_QUERY);
 
 		PagingParameters pagingParameters = new PagingParameters();
 		Integer maxResponseResults = ApiConfiguration.getMaxResponseResults();
@@ -246,6 +253,33 @@ public class Util {
 			}
 			if (!paramMap.isEmpty()) {
 				pagingParameters.setSort(paramMap);
+			}
+		}
+		// The servlet is expecting filter params
+		if (validFilterKeysMap != null) {
+			// If sent, The filter params must be together
+			if (rcvdFilterField != null && rcvdFilterQuery == null
+					|| rcvdFilterField == null && rcvdFilterQuery != null) {
+				throw new BadRequestException("#{error.paging.filterParams}");
+			}
+			if (rcvdFilterField != null) {
+				if (rcvdFilterField.trim().isEmpty()) {
+					throw new BadRequestException("#{error.paging.emptyFilterField}");
+				}
+				rcvdFilterField = rcvdFilterField.trim();
+				// Validate the sort keys with the expected
+				if (!validFilterKeysMap.containsKey(rcvdFilterField)) {
+					throw new BadRequestException(
+							Util.concatenateParamsToLabel("#{error.paging.invalidColumnFilter}", rcvdFilterField));
+				}
+				pagingParameters.setFilterField(validFilterKeysMap.get(rcvdFilterField));
+			}
+			if (rcvdFilterQuery != null) {
+				if (rcvdFilterQuery.trim().isEmpty()) {
+					throw new BadRequestException("#{error.paging.emptyFilterQuery}");
+				}
+				rcvdFilterQuery = rcvdFilterQuery.trim();
+				pagingParameters.setFilterQuery(rcvdFilterQuery);
 			}
 		}
 		return pagingParameters;

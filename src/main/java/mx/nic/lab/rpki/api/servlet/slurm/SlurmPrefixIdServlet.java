@@ -71,6 +71,28 @@ public class SlurmPrefixIdServlet extends SlurmPrefixServlet {
 	}
 
 	/**
+	 * Valid filter keys that can be received as query parameters at a filter
+	 * search, they're mapped to the corresponding POJO properties
+	 */
+	private static final Map<String, String> validFilterFilterKeysMap;
+	static {
+		validFilterFilterKeysMap = new HashMap<>();
+		validFilterFilterKeysMap.put("asn", SlurmPrefix.ASN);
+		validFilterFilterKeysMap.put("prefix", SlurmPrefix.PREFIX_TEXT);
+	}
+
+	/**
+	 * Valid filter keys that can be received as query parameters at an assertion
+	 * search, they're mapped to the corresponding POJO properties
+	 */
+	private static final Map<String, String> validAssertionFilterKeysMap;
+	static {
+		validAssertionFilterKeysMap = new HashMap<>();
+		validAssertionFilterKeysMap.put("asn", SlurmPrefix.ASN);
+		validAssertionFilterKeysMap.put("prefix", SlurmPrefix.PREFIX_TEXT);
+	}
+
+	/**
 	 * Serial version ID
 	 */
 	private static final long serialVersionUID = 1L;
@@ -297,6 +319,23 @@ public class SlurmPrefixIdServlet extends SlurmPrefixServlet {
 			return validFilterSortKeysMap;
 		} else if (requestedService.equals(ASSERTION_SERVICE)) {
 			return validAssertionSortKeysMap;
+		}
+		return null;
+	}
+
+	@Override
+	protected Map<String, String> getValidFilterKeys(HttpServletRequest request) {
+		// Valid only for services "filter" or "assertion"
+		String requestedService;
+		try {
+			requestedService = getRequestedService(request);
+		} catch (HttpException e) {
+			return null;
+		}
+		if (requestedService.equals(FILTER_SERVICE)) {
+			return validFilterFilterKeysMap;
+		} else if (requestedService.equals(ASSERTION_SERVICE)) {
+			return validAssertionFilterKeysMap;
 		}
 		return null;
 	}

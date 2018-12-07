@@ -5,7 +5,6 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -60,11 +59,6 @@ public class TalSyncOneServlet extends TalServlet {
 	@Override
 	protected List<RequestMethod> getSupportedRequestMethods() {
 		return Arrays.asList(RequestMethod.POST);
-	}
-
-	@Override
-	protected Map<String, String> getValidSortKeys(HttpServletRequest request) {
-		return null;
 	}
 
 	/**

@@ -166,7 +166,7 @@ public abstract class ApiServlet extends HttpServlet {
 	 * @throws BadRequestException
 	 */
 	protected PagingParameters getPagingParameters(HttpServletRequest request) throws BadRequestException {
-		return Util.createFromRequest(request, getValidSortKeys(request));
+		return Util.createFromRequest(request, getValidSortKeys(request), getValidFilterKeys(request));
 	}
 
 	/**
@@ -199,11 +199,32 @@ public abstract class ApiServlet extends HttpServlet {
 	/**
 	 * Valid sort keys that can be received as query parameters, they're mapped to
 	 * the corresponding POJO properties. The key must be the name of the parameter,
-	 * the value must be the name of the POJO property. If the servlet doesn't
-	 * support paging parameters, then it must return a <code>null</code> value.
+	 * the value must be the name of the POJO property.<br>
+	 * <br>
+	 * If the servlet supports paging parameters, then it must override this
+	 * function, otherwise a <code>null</code> value will be returned to indicate
+	 * that the servlet doesn't support sort parameters.
 	 * 
 	 * @param request
 	 * @return Map of the valid query parameters to use as paging parameters
 	 */
-	protected abstract Map<String, String> getValidSortKeys(HttpServletRequest request);
+	protected Map<String, String> getValidSortKeys(HttpServletRequest request) {
+		return null;
+	}
+
+	/**
+	 * Valid filter keys that can be received as query parameters, they're mapped to
+	 * the corresponding POJO properties. The key must be the name of the parameter,
+	 * the value must be the name of the POJO property.<br>
+	 * <br>
+	 * If the servlet supports filter parameters, then it must override this
+	 * function, otherwise a <code>null</code> value will be returned to indicate
+	 * that the servlet doesn't support filter parameters.
+	 * 
+	 * @param request
+	 * @return Map of the valid query parameters to use as filter parameters
+	 */
+	protected Map<String, String> getValidFilterKeys(HttpServletRequest request) {
+		return null;
+	}
 }

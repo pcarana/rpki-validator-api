@@ -40,6 +40,16 @@ public class RoaListServlet extends RoaServlet {
 	}
 
 	/**
+	 * Valid filter keys that can be received as query parameters, they're mapped to
+	 * the corresponding POJO properties
+	 */
+	private static final Map<String, String> validFilterKeysMap;
+	static {
+		validFilterKeysMap = new HashMap<>();
+		validFilterKeysMap.put("asn", Roa.ASN);
+		validFilterKeysMap.put("prefix", Roa.PREFIX_TEXT);
+	}
+	/**
 	 * Serial version ID
 	 */
 	private static final long serialVersionUID = 1L;
@@ -65,6 +75,11 @@ public class RoaListServlet extends RoaServlet {
 	@Override
 	protected Map<String, String> getValidSortKeys(HttpServletRequest request) {
 		return validSortKeysMap;
+	}
+
+	@Override
+	protected Map<String, String> getValidFilterKeys(HttpServletRequest request) {
+		return validFilterKeysMap;
 	}
 
 }

@@ -2,7 +2,6 @@ package mx.nic.lab.rpki.api.servlet.slurm;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -49,11 +48,6 @@ public class SlurmServlet extends DataAccessServlet<SlurmDAO> {
 	@Override
 	protected SlurmDAO initAccessDAO() throws ApiDataAccessException {
 		return DataAccessService.getSlurmDAO();
-	}
-
-	@Override
-	protected Map<String, String> getValidSortKeys(HttpServletRequest request) {
-		return null;
 	}
 
 }
