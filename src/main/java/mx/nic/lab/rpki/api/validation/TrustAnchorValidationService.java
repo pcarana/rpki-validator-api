@@ -93,7 +93,7 @@ public class TrustAnchorValidationService extends ValidationService {
 			throw new InitializationException("Error getting existent tals data", e);
 		}
 		for (File talFile : talsLocation.listFiles()) {
-			if (!talFile.isFile() && !talFile.getName().endsWith(".tal")) {
+			if (!talFile.isFile() || !talFile.getName().endsWith(".tal")) {
 				logger.log(Level.WARNING, talFile + " isn't a file nor has the extension .tal, it will be ommitted");
 				continue;
 			}
