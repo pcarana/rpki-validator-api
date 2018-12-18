@@ -14,6 +14,9 @@ import java.util.Properties;
 
 import org.quartz.CronExpression;
 
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.SignatureException;
+import mx.nic.lab.rpki.api.servlet.JWTServlet;
 import mx.nic.lab.rpki.api.util.Util;
 import mx.nic.lab.rpki.db.exception.InitializationException;
 import net.ripe.rpki.commons.rsync.Command;
@@ -38,6 +41,9 @@ public class ApiConfiguration {
 	private static final String VALIDATOR_ARG_HELP_KEY = "validator.arg.help";
 	private static final String VALIDATOR_ARG_SYNC_TAL_KEY = "validator.arg.sync.tal";
 	private static final String VALIDATOR_ARG_SYNC_TAL_OPTS_KEY = "validator.arg.sync.tal.opts";
+	private static final String JWT_SIGNATURE_ALGORITHM_KEY = "jwt.signature.algorithm";
+	private static final String JWT_ISSUER_KEY = "jwt.issuer";
+	private static final String JWT_EXPIRATION_TIME_KEY = "jwt.expiration.time";
 
 	// Properties to configure
 	private static String serverLanguage;
@@ -51,6 +57,9 @@ public class ApiConfiguration {
 	private static String validatorArgHelp;
 	private static String validatorArgSyncTal;
 	private static String validatorArgSyncTalOpts;
+	private static SignatureAlgorithm jwtSignatureAlgorithm;
+	private static String jwtIssuer;
+	private static Long jwtExpirationTime;
 
 	private ApiConfiguration() {
 		// No code
@@ -182,6 +191,42 @@ public class ApiConfiguration {
 			validatorArgSyncTalOpts = systemProperties.getProperty(VALIDATOR_ARG_SYNC_TAL_OPTS_KEY).trim();
 		}
 
+		if (isPropertyNullOrEmpty(JWT_SIGNATURE_ALGORITHM_KEY)) {
+			invalidProperties.add(JWT_SIGNATURE_ALGORITHM_KEY);
+		} else {
+			try {
+				jwtSignatureAlgorithm = SignatureAlgorithm
+						.forName(systemProperties.getProperty(JWT_SIGNATURE_ALGORITHM_KEY));
+				// Verify that the algorithm can be used to create a key
+				JWTServlet.setSigningKey(jwtSignatureAlgorithm);
+			} catch (SignatureException | IllegalArgumentException e) {
+				invalidProperties.add(JWT_SIGNATURE_ALGORITHM_KEY);
+				exceptions.add(e);
+			}
+		}
+
+		if (isPropertyNullOrEmpty(JWT_ISSUER_KEY)) {
+			invalidProperties.add(JWT_ISSUER_KEY);
+		} else {
+			jwtIssuer = systemProperties.getProperty(JWT_ISSUER_KEY).trim();
+		}
+
+		if (isPropertyNullOrEmpty(JWT_EXPIRATION_TIME_KEY)) {
+			invalidProperties.add(JWT_EXPIRATION_TIME_KEY);
+		} else {
+			try {
+				jwtExpirationTime = Long.parseLong(systemProperties.getProperty(JWT_EXPIRATION_TIME_KEY).trim());
+				if (jwtExpirationTime <= 0) {
+					invalidProperties.add(JWT_EXPIRATION_TIME_KEY);
+					exceptions
+							.add(new IllegalArgumentException(JWT_EXPIRATION_TIME_KEY + " must be greater than zero"));
+				}
+			} catch (NumberFormatException e) {
+				invalidProperties.add(JWT_EXPIRATION_TIME_KEY);
+				exceptions.add(e);
+			}
+		}
+
 		if (!invalidProperties.isEmpty()) {
 			InitializationException invalidValueException = new InitializationException(
 					"The following required properties were not found or have invalid values in configuration file : "
@@ -310,5 +355,17 @@ public class ApiConfiguration {
 
 	public static String getValidatorArgSyncTalOpts() {
 		return validatorArgSyncTalOpts;
+	}
+
+	public static SignatureAlgorithm getJwtSignatureAlgorithm() {
+		return jwtSignatureAlgorithm;
+	}
+
+	public static String getJwtIssuer() {
+		return jwtIssuer;
+	}
+
+	public static Long getJwtExpirationTime() {
+		return jwtExpirationTime;
 	}
 }
