@@ -74,12 +74,14 @@ public class RouteValidationServlet extends DataAccessServlet<RouteValidationDAO
 			throw new BadRequestException("#{error.route.validation.prefix.notIp}", e);
 		}
 		Integer prefixLength = null;
+		int familyType = -1;
 		try {
 			prefixLength = Integer.parseInt(additionalPathInfo.get(2));
 			int maxLength = prefix instanceof Inet4Address ? 32 : 128;
 			if (prefixLength < 1 || prefixLength > maxLength) {
 				throw new BadRequestException("#{error.route.validation.prefixLength.outOfRange}");
 			}
+			familyType = prefix instanceof Inet4Address ? 4 : 6;
 		} catch (NumberFormatException e) {
 			throw new BadRequestException("#{error.route.validation.prefixLength.invalid}", e);
 		}
@@ -87,7 +89,7 @@ public class RouteValidationServlet extends DataAccessServlet<RouteValidationDAO
 			throw new BadRequestException("#{error.route.validation.prefix.invalid}");
 		}
 
-		RouteValidation routeValidation = dao.validate(asn, prefix.getAddress(), prefixLength, fullCheck);
+		RouteValidation routeValidation = dao.validate(asn, prefix.getAddress(), prefixLength, familyType, fullCheck);
 		return new RouteValidationResult(routeValidation);
 	}
 
