@@ -93,7 +93,7 @@
 		</dependency>
 		<dependency>
 			<groupId>mx.nic.lab.rpki.validator</groupId>
-			<artifactId>rpki-validator-sqlite-prov</artifactId>
+			<artifactId>rpki-validator-prov</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
