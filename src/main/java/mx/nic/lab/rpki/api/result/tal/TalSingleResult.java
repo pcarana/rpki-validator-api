@@ -12,8 +12,6 @@ import mx.nic.lab.rpki.api.result.ApiSingleResult;
 import mx.nic.lab.rpki.api.util.CMSUtil;
 import mx.nic.lab.rpki.db.pojo.Tal;
 import mx.nic.lab.rpki.db.pojo.TalUri;
-import mx.nic.lab.rpki.db.pojo.ValidationCheck;
-import mx.nic.lab.rpki.db.pojo.ValidationCheck.Status;
 import mx.nic.lab.rpki.db.pojo.ValidationRun;
 
 /**
@@ -83,63 +81,8 @@ public class TalSingleResult extends ApiSingleResult<Tal> {
 			addKeyValueToBuilder(objBuilder, "status", validationRun.getStatus().toString(), true);
 			Instant completedAt = validationRun.getCompletedAt();
 			addKeyValueToBuilder(objBuilder, "completedAt", completedAt != null ? completedAt.toString() : null, true);
-			buildValidationChecks(objBuilder, validationRun);
 			arrayBuilder.add(objBuilder);
 		}
 		builder.add("validations", arrayBuilder);
-	}
-
-	/**
-	 * Adds the {@link ValidationCheck} list of the {@link ValidationRun} as a JSON
-	 * Array to the <code>JsonObjectBuilder</code> sent
-	 * 
-	 * @param builder
-	 * @param validationRun
-	 */
-	protected void buildValidationChecks(JsonObjectBuilder builder, ValidationRun validationRun) {
-		JsonObjectBuilder checksBuilder = Json.createObjectBuilder();
-		JsonArrayBuilder errorBuilder = Json.createArrayBuilder();
-		JsonArrayBuilder warningBuilder = Json.createArrayBuilder();
-		JsonArrayBuilder passedBuilder = Json.createArrayBuilder();
-		if (validationRun.getValidationChecks() != null && !validationRun.getValidationChecks().isEmpty()) {
-			for (ValidationCheck validationCheck : validationRun.getValidationChecks()) {
-				JsonObjectBuilder checkBuilder = Json.createObjectBuilder();
-				addKeyValueToBuilder(checkBuilder, "location", validationCheck.getLocation(), true);
-				if (validationCheck.getStatus() != Status.PASSED) {
-					// Prepare the key to search it at the bundles
-					// The final value is #{key}.{status}{param0}{paramN}...
-					StringBuilder keyBuilder = new StringBuilder();
-					keyBuilder.append("#{");
-					keyBuilder.append(validationCheck.getKey());
-					keyBuilder.append(".");
-					keyBuilder.append(validationCheck.getStatus().toString().toLowerCase());
-					keyBuilder.append("}");
-					if (validationCheck.getParameters() != null) {
-						for (String parameter : validationCheck.getParameters()) {
-							if (parameter != null && !parameter.trim().isEmpty()) {
-								keyBuilder.append("{").append(parameter).append("}");
-							}
-						}
-					}
-					addKeyValueToBuilder(checkBuilder, "message", keyBuilder.toString(), true);
-					switch (validationCheck.getStatus()) {
-					case ERROR:
-						errorBuilder.add(checkBuilder);
-						break;
-					case WARNING:
-						warningBuilder.add(checkBuilder);
-						break;
-					default:
-						break;
-					}
-				} else {
-					passedBuilder.add(checkBuilder);
-				}
-			}
-		}
-		checksBuilder.add("error", errorBuilder);
-		checksBuilder.add("warning", warningBuilder);
-		checksBuilder.add("passed", passedBuilder);
-		builder.add("checks", checksBuilder);
 	}
 }
