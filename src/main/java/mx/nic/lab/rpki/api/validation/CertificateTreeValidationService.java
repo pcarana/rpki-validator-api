@@ -52,6 +52,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import com.google.common.base.Objects;
 
+import mx.nic.lab.rpki.api.util.Hex;
 import mx.nic.lab.rpki.api.util.RsyncUtils;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.exception.ErrorCodes;
@@ -150,7 +151,7 @@ public class CertificateTreeValidationService extends ValidationService {
 					.findLatestByTypeAndAuthorityKeyIdentifier(RpkiObject.Type.MFT, context.getSubjectKeyIdentifier());
 			if (!manifestObject.isPresent()) {
 				temporary.error(ValidationString.VALIDATOR_NO_LOCAL_MANIFEST_NO_MANIFEST_IN_REPOSITORY,
-						rpkiRepository.getLocationUri());
+						Hex.format(context.getSubjectKeyIdentifier()), rpkiRepository.getLocationUri());
 			}
 
 			Optional<ManifestCms> maybeManifest = manifestObject.flatMap(x -> {
