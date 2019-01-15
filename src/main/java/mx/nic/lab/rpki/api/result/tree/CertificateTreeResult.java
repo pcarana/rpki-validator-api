@@ -13,6 +13,7 @@ import mx.nic.lab.rpki.db.cert.tree.CertificationTreeNode;
 import mx.nic.lab.rpki.db.cert.tree.GbrNode;
 import mx.nic.lab.rpki.db.cert.tree.ResourceNode;
 import mx.nic.lab.rpki.db.cert.tree.RoaNode;
+import mx.nic.lab.rpki.db.pojo.PagingParameters;
 
 /**
  * Result that represents a certification tree, either as the TAL as root or as
@@ -21,9 +22,15 @@ import mx.nic.lab.rpki.db.cert.tree.RoaNode;
  */
 public class CertificateTreeResult extends ApiSingleResult<CertificationTreeNode> {
 
-	public CertificateTreeResult(CertificationTreeNode certificationTreeNode) {
+	/**
+	 * Paging parameters received at the request, only limit and offset are expected
+	 */
+	private PagingParameters pagingParameters;
+
+	public CertificateTreeResult(CertificationTreeNode certificationTreeNode, PagingParameters pagingParameters) {
 		super();
 		setApiObject(certificationTreeNode);
+		this.pagingParameters = pagingParameters;
 	}
 
 	@Override
@@ -37,6 +44,7 @@ public class CertificateTreeResult extends ApiSingleResult<CertificationTreeNode
 		JsonObjectBuilder rootBuilder = Json.createObjectBuilder();
 		addCommonFields(rootBuilder, certificateNode);
 		addCertificateWithoutChilds(rootBuilder, certificateNode);
+		rootBuilder.add("returned", certificateNode.getChilds().size());
 		if (certificateNode.getChildCount() > 0) {
 			JsonArrayBuilder childsBuilder = Json.createArrayBuilder();
 			for (CertificationTreeNode child : certificateNode.getChilds()) {
@@ -44,6 +52,7 @@ public class CertificateTreeResult extends ApiSingleResult<CertificationTreeNode
 			}
 			addKeyValueToBuilder(rootBuilder, "childs", childsBuilder, false);
 		}
+		addPageData(rootBuilder);
 		return rootBuilder.build();
 	}
 
@@ -106,6 +115,22 @@ public class CertificateTreeResult extends ApiSingleResult<CertificationTreeNode
 		if (node.getSubjectKeyIdentifier() != null) {
 			addKeyValueToBuilder(builder, "subjectKeyIdentifier",
 					Hex.toHexString(node.getSubjectKeyIdentifier()).toUpperCase(), false);
+		}
+	}
+
+	/**
+	 * Add the paging data applied to the childs
+	 * 
+	 * @param builder
+	 */
+	private void addPageData(JsonObjectBuilder builder) {
+		if (pagingParameters != null && pagingParameters.getLimit() > 0) {
+			JsonObjectBuilder pageBuilder = Json.createObjectBuilder();
+			pageBuilder.add("limit", pagingParameters.getLimit());
+			if (pagingParameters.getOffset() > -1) {
+				pageBuilder.add("offset", pagingParameters.getOffset());
+			}
+			builder.add("page", pageBuilder);
 		}
 	}
 }

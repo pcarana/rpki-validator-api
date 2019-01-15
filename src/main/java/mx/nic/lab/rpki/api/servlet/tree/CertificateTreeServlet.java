@@ -15,6 +15,7 @@ import mx.nic.lab.rpki.api.servlet.RequestMethod;
 import mx.nic.lab.rpki.api.util.Util;
 import mx.nic.lab.rpki.db.cert.tree.CertificationTreeNode;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
+import mx.nic.lab.rpki.db.pojo.PagingParameters;
 import mx.nic.lab.rpki.db.service.DataAccessService;
 import mx.nic.lab.rpki.db.spi.CertificateTreeDAO;
 
@@ -64,16 +65,18 @@ public class CertificateTreeServlet extends DataAccessServlet<CertificateTreeDAO
 		} catch (NumberFormatException e) {
 			throw new BadRequestException("#{error.invalidId}", e);
 		}
+		// Only the page parameters are expected (limit and offset)
+		PagingParameters pagingParameters = getPagingParameters(request);
 		CertificationTreeNode tree = null;
 		if (type.equals(ROOT_SERVICE)) {
-			tree = dao.getFromRoot(id);
+			tree = dao.getFromRoot(id, pagingParameters);
 		} else {
-			tree = dao.getFromChild(id);
+			tree = dao.getFromChild(id, pagingParameters);
 		}
 		if (tree == null) {
 			return null;
 		}
-		return new CertificateTreeResult(tree);
+		return new CertificateTreeResult(tree, pagingParameters);
 	}
 
 	@Override
