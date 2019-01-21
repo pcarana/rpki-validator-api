@@ -12,6 +12,7 @@ import mx.nic.lab.rpki.api.exception.BadRequestException;
 import mx.nic.lab.rpki.api.exception.HttpException;
 import mx.nic.lab.rpki.api.result.ApiResult;
 import mx.nic.lab.rpki.api.result.tal.TalValidationResult;
+import mx.nic.lab.rpki.api.result.tal.TalValidationSummaryResult;
 import mx.nic.lab.rpki.api.servlet.DataAccessServlet;
 import mx.nic.lab.rpki.api.servlet.RequestMethod;
 import mx.nic.lab.rpki.api.util.Util;
@@ -58,6 +59,12 @@ public class TalValidationServlet extends DataAccessServlet<ValidationRunDAO> {
 	 */
 	private static final long serialVersionUID = 1L;
 
+	/**
+	 * Optional query parameter to indicate if a summary of the validation will be
+	 * sent at the response
+	 */
+	private static final String PARAM_SUMMARY = "summary";
+
 	@Override
 	protected ValidationRunDAO initAccessDAO() throws ApiDataAccessException {
 		return DataAccessService.getValidationRunDAO();
@@ -73,9 +80,26 @@ public class TalValidationServlet extends DataAccessServlet<ValidationRunDAO> {
 		} catch (NumberFormatException e) {
 			throw new BadRequestException("#{error.invalidId}", e);
 		}
-		PagingParameters pagingParameters = getPagingParameters(request);
-		ListResult<ValidationCheck> validationChecks = dao.getLastSuccessfulChecksByTal(id, pagingParameters);
-		return new TalValidationResult(validationChecks, pagingParameters);
+		// Only the exact match ("true") will be treated as such
+		String summaryStr = request.getParameter(PARAM_SUMMARY);
+		if (summaryStr != null && !summaryStr.trim().equals("true") && !summaryStr.trim().equals("false")) {
+			throw new BadRequestException(
+					Util.concatenateParamsToLabel("#{error.invalidParameter}", PARAM_SUMMARY, "true, false"));
+		}
+		boolean summary = summaryStr == null ? false : Boolean.parseBoolean(summaryStr.trim());
+		if (!summary) {
+			PagingParameters pagingParameters = getPagingParameters(request);
+			ListResult<ValidationCheck> validationChecks = dao.getLastSuccessfulChecksByTal(id, pagingParameters);
+			if (validationChecks == null) {
+				return null;
+			}
+			return new TalValidationResult(validationChecks, pagingParameters);
+		}
+		Map<ValidationCheck.Status, Map<String, Long>> summaryMap = dao.getLastSuccessfulCheckSummByTal(id);
+		if (summaryMap == null) {
+			return null;
+		}
+		return new TalValidationSummaryResult(summaryMap);
 	}
 
 	@Override
