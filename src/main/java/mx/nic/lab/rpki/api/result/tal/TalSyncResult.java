@@ -5,6 +5,7 @@ import javax.json.JsonObjectBuilder;
 import javax.json.JsonStructure;
 
 import mx.nic.lab.rpki.api.result.ApiResult;
+import mx.nic.lab.rpki.api.servlet.tal.TalSyncOneServlet.ExecutionStatus;
 
 /**
  * Result that represents the execution result of a forced TAL sync
@@ -12,16 +13,19 @@ import mx.nic.lab.rpki.api.result.ApiResult;
  */
 public class TalSyncResult extends ApiResult {
 
-	private int exitStatus;
+	private ExecutionStatus execStatus;
 
-	public TalSyncResult(int exitStatus) {
-		this.exitStatus = exitStatus;
+	public TalSyncResult(ExecutionStatus execStatus) {
+		this.execStatus = execStatus;
 	}
 
 	@Override
 	public JsonStructure toJsonStructure() {
+		if (execStatus == null) {
+			return null;
+		}
 		JsonObjectBuilder builder = Json.createObjectBuilder();
-		addKeyValueToBuilder(builder, "execStatus", exitStatus, true);
+		addKeyValueToBuilder(builder, "execStatus", execStatus.toString(), true);
 		return builder.build();
 	}
 }
