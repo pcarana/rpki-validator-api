@@ -1,30 +1,28 @@
 package mx.nic.lab.rpki.api.result;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
+import mx.nic.lab.rpki.api.util.Util;
 
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonStructure;
 import javax.json.JsonValue;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.Locale;
 
 /**
- * Generic result from the API
- *
+ * Generic JSON result from the API
  */
-public abstract class ApiResult {
-
-	/**
-	 * HTTP response code if a servlet wishes to customize it
-	 */
-	protected int code;
+public abstract class ApiResult extends ApiResultAbstract {
 
 	/**
 	 * Return the JSON of the result
-	 * 
+	 *
 	 * @return {@link JsonStructure} of the object
 	 */
-	public abstract JsonStructure toJsonStructure();
+	protected abstract JsonStructure toJsonStructure();
 
 	/**
 	 * Add an Object value to the {@link JsonObjectBuilder} with the specified key
@@ -107,11 +105,47 @@ public abstract class ApiResult {
 		}
 	}
 
-	public int getCode() {
-		return code;
+
+	@Override
+	public void printBody(Locale locale, HttpServletResponse resp) throws IOException {
+		// Render RESULT
+		resp.setStatus(this.getCode());
+		resp.setCharacterEncoding("UTF-8");
+		resp.setContentType("application/json");
+		resp.setHeader("Access-Control-Allow-Origin", "*");
+		JsonStructure jsonResponse = this.toJsonStructure();
+		if (jsonResponse != null) {
+			String body = getLocaleJson(locale, jsonResponse.toString(), resp);
+			resp.getWriter().print(body);
+		}
 	}
 
-	public void setCode(int code) {
-		this.code = code;
+
+	/**
+	 * Get the complete JSON string, replacing all the labels "#{label}" with its
+	 * corresponding locale value. If there's no bundle available or no property
+	 * defined, an empty String is used to replace the corresponding label.<br>
+	 * <br>
+	 * If the label has parameters concatenated (e.g. #{label}{param1}{param2} see
+	 * more at
+	 * {@link mx.nic.lab.rpki.api.util.Util#concatenateParamsToLabel(String, Object...)})
+	 * then take those values into account to replace any parameters indicated at
+	 * the label. The order of the parameter affects the replacement order, so the
+	 * parameter <code>{0}</code> will be replaced with the first param value, the
+	 * <code>{1}</code> with the second, and so on... <br>
+	 * <br>
+	 * Finally, the <code>response</code> is modified adding the 'Content-Language'
+	 * header to indicate which language was used.
+	 *
+	 * @param locale
+	 * @param jsonString
+	 * @param response
+	 * @return JSON string with labels replaced
+	 */
+	private String getLocaleJson(Locale locale, String jsonString, HttpServletResponse response) {
+		jsonString = Util.getJsonWithLocale(locale, jsonString);
+		response.setHeader("Content-Language", locale.toLanguageTag());
+		return jsonString;
 	}
+
 }

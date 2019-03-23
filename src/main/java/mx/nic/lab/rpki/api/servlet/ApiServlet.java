@@ -1,31 +1,25 @@
 package mx.nic.lab.rpki.api.servlet;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import javax.json.JsonStructure;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import mx.nic.lab.rpki.api.exception.BadRequestException;
-import mx.nic.lab.rpki.api.exception.HttpException;
-import mx.nic.lab.rpki.api.exception.InternalServerErrorException;
-import mx.nic.lab.rpki.api.exception.MethodNotAllowedException;
-import mx.nic.lab.rpki.api.exception.NotFoundException;
+import mx.nic.lab.rpki.api.exception.*;
 import mx.nic.lab.rpki.api.result.ApiResult;
+import mx.nic.lab.rpki.api.result.ApiResultAbstract;
 import mx.nic.lab.rpki.api.result.error.ErrorResult;
 import mx.nic.lab.rpki.api.util.Util;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.exception.ValidationException;
 import mx.nic.lab.rpki.db.pojo.PagingParameters;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Base class of all API servlets, implements all the supported request methods
@@ -63,32 +57,6 @@ public abstract class ApiServlet extends HttpServlet {
 		handleRequest(RequestMethod.DELETE, req, resp);
 	}
 
-	/**
-	 * Get the complete JSON string, replacing all the labels "#{label}" with its
-	 * corresponding locale value. If there's no bundle available or no property
-	 * defined, an empty String is used to replace the corresponding label.<br>
-	 * <br>
-	 * If the label has parameters concatenated (e.g. #{label}{param1}{param2} see
-	 * more at
-	 * {@link mx.nic.lab.rpki.api.util.Util#concatenateParamsToLabel(String, Object...)})
-	 * then take those values into account to replace any parameters indicated at
-	 * the label. The order of the parameter affects the replacement order, so the
-	 * parameter <code>{0}</code> will be replaced with the first param value, the
-	 * <code>{1}</code> with the second, and so on... <br>
-	 * <br>
-	 * Finally, the <code>response</code> is modified adding the 'Content-Language'
-	 * header to indicate which language was used.
-	 * 
-	 * @param locale
-	 * @param jsonString
-	 * @param response
-	 * @return JSON string with labels replaced
-	 */
-	private String getLocaleJson(Locale locale, String jsonString, HttpServletResponse response) {
-		jsonString = Util.getJsonWithLocale(locale, jsonString);
-		response.setHeader("Content-Language", locale.toLanguageTag());
-		return jsonString;
-	}
 
 	/**
 	 * Generic handle of all supported requests, gets the {@link ApiResult} and
@@ -102,7 +70,7 @@ public abstract class ApiServlet extends HttpServlet {
 	 */
 	private void handleRequest(RequestMethod requestMethod, HttpServletRequest req, HttpServletResponse resp)
 			throws ServletException, IOException {
-		ApiResult result;
+		ApiResultAbstract result;
 		try {
 			// Validate encoding
 			try {
@@ -144,17 +112,7 @@ public abstract class ApiServlet extends HttpServlet {
 			result.setCode(HttpServletResponse.SC_OK);
 		}
 
-		// Render RESULT
-		resp.setStatus(result.getCode());
-		resp.setCharacterEncoding("UTF-8");
-		resp.setContentType("application/json");
-		resp.setHeader("Access-Control-Allow-Origin", "*");
-
-		JsonStructure jsonResponse = result.toJsonStructure();
-		if (jsonResponse != null) {
-			String body = getLocaleJson(req.getLocale(), jsonResponse.toString(), resp);
-			resp.getWriter().print(body);
-		}
+		result.printBody(req.getLocale(),resp);
 	}
 
 	/**
@@ -193,7 +151,7 @@ public abstract class ApiServlet extends HttpServlet {
 	 * @throws ApiDataAccessException
 	 *             Generic errors from the data access
 	 */
-	protected abstract ApiResult doApiRequest(RequestMethod requestMethod, HttpServletRequest request)
+	protected abstract ApiResultAbstract doApiRequest(RequestMethod requestMethod, HttpServletRequest request)
 			throws HttpException, ApiDataAccessException;
 
 	/**

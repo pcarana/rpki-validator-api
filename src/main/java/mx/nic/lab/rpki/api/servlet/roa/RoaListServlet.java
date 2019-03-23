@@ -1,28 +1,25 @@
 package mx.nic.lab.rpki.api.servlet.roa;
 
+import mx.nic.lab.rpki.api.exception.HttpException;
+import mx.nic.lab.rpki.api.result.ApiResultAbstract;
+import mx.nic.lab.rpki.api.result.roa.RoaListResult;
+import mx.nic.lab.rpki.api.result.roa.RoaListResultCSV;
+import mx.nic.lab.rpki.api.result.roa.RoaListResultRPSL;
+import mx.nic.lab.rpki.api.servlet.RequestMethod;
+import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
+import mx.nic.lab.rpki.db.pojo.PagingParameters;
+import mx.nic.lab.rpki.db.pojo.Roa;
+import mx.nic.lab.rpki.db.spi.RoaDAO;
+
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServletRequest;
 
-import mx.nic.lab.rpki.api.exception.HttpException;
-import mx.nic.lab.rpki.api.result.ApiResult;
-import mx.nic.lab.rpki.api.result.roa.RoaListResult;
-import mx.nic.lab.rpki.api.servlet.RequestMethod;
-import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
-import mx.nic.lab.rpki.db.pojo.ListResult;
-import mx.nic.lab.rpki.db.pojo.PagingParameters;
-import mx.nic.lab.rpki.db.pojo.Roa;
-import mx.nic.lab.rpki.db.spi.RoaDAO;
-
-/**
- * Servlet to provide all the ROAs
- *
- */
-@WebServlet(name = "roaList", value = { "/roa" })
+@WebServlet(name = "roaList", value = {"/roa"})
 public class RoaListServlet extends RoaServlet {
 
 	/**
@@ -44,6 +41,7 @@ public class RoaListServlet extends RoaServlet {
 	 * the corresponding POJO properties
 	 */
 	private static final Map<String, String> validFilterKeysMap;
+
 	static {
 		validFilterKeysMap = new HashMap<>();
 		validFilterKeysMap.put("asn", Roa.ASN);
@@ -54,12 +52,22 @@ public class RoaListServlet extends RoaServlet {
 	 */
 	private static final long serialVersionUID = 1L;
 
+	/** Gets all the ROAs matching the request parameters
+	 * @return an ApiResultAbstract that render the response in RPSL, csv or JSON format according to the Accept heading
+	 * @throws HttpException if the request parameters are incorrect
+	 * @throws ApiDataAccessException if there is an error accessing the DAO
+	 */
 	@Override
-	protected ApiResult doApiDaRequest(RequestMethod requestMethod, HttpServletRequest request, RoaDAO dao)
+	protected ApiResultAbstract doApiDaRequest(RequestMethod requestMethod, HttpServletRequest request, RoaDAO dao)
 			throws HttpException, ApiDataAccessException {
-		PagingParameters pagingParameters = getPagingParameters(request);
-		ListResult<Roa> roas = dao.getAll(pagingParameters);
-		return new RoaListResult(roas, pagingParameters);
+		final String acceptHeader = request.getHeader("Accept");
+		final PagingParameters pagingParameters = getPagingParameters(request);
+		if (acceptHeader.contains(RoaListResultRPSL.TYPE_RPSL)) {
+			return new RoaListResultRPSL(dao.getAll(pagingParameters), pagingParameters);
+		} else if (acceptHeader.contains(RoaListResultCSV.TYPE_CSV)) {
+			return new RoaListResultCSV(dao.getAll(pagingParameters), pagingParameters);
+		}
+		return new RoaListResult(dao.getAll(pagingParameters), pagingParameters);
 	}
 
 	@Override
@@ -81,5 +89,6 @@ public class RoaListServlet extends RoaServlet {
 	protected Map<String, String> getValidFilterKeys(HttpServletRequest request) {
 		return validFilterKeysMap;
 	}
+
 
 }

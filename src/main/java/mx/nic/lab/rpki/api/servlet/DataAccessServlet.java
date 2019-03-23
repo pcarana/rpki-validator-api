@@ -1,12 +1,12 @@
 package mx.nic.lab.rpki.api.servlet;
 
-import javax.servlet.http.HttpServletRequest;
-
 import mx.nic.lab.rpki.api.exception.HttpException;
 import mx.nic.lab.rpki.api.exception.NotFoundException;
-import mx.nic.lab.rpki.api.result.ApiResult;
+import mx.nic.lab.rpki.api.result.ApiResultAbstract;
 import mx.nic.lab.rpki.db.exception.ApiDataAccessException;
 import mx.nic.lab.rpki.db.spi.DAO;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * A servlet that extracts information from a specific DAO.
@@ -49,7 +49,7 @@ public abstract class DataAccessServlet<T extends DAO> extends ApiServlet {
 	}
 
 	@Override
-	protected ApiResult doApiRequest(RequestMethod requestMethod, HttpServletRequest request)
+	protected ApiResultAbstract doApiRequest(RequestMethod requestMethod, HttpServletRequest request)
 			throws HttpException, ApiDataAccessException {
 		T dao = initAndValidate(request, requestMethod);
 		return doApiDaRequest(requestMethod, request, dao);
@@ -59,7 +59,7 @@ public abstract class DataAccessServlet<T extends DAO> extends ApiServlet {
 	 * Adds data-access-specific behavior on top of
 	 * {@link #doApiRequest(RequestMethod, HttpServletRequest)}.
 	 */
-	protected abstract ApiResult doApiDaRequest(RequestMethod requestMethod, HttpServletRequest request, T dao)
+	protected abstract ApiResultAbstract doApiDaRequest(RequestMethod requestMethod, HttpServletRequest request, T dao)
 			throws HttpException, ApiDataAccessException;
 
 }
